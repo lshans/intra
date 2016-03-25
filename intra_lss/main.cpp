@@ -223,57 +223,59 @@ void Fast(double ** TDCT, double ** DCT, int rows, int cols)
 
 
 // multiply two mat
-// D:		input 1st mat
-// f:		input 2st mat
-// temp:	otuput mat
-// H1:		
-void Mult(double **D,double **f,double **temp, int H1, int W1, int K1)	//DCT正变换  H1 * K1 | K1 * W1
+// D:		input 1st mat, H1 x K1
+// f:		input 2st mat, K1 x W1
+// temp:	otuput mat, H1 x W1
+void Mult(double **mat1, double **mat2,double **resMat, int H1, int W1, int K1)	//DCT正变换  H1 * K1 | K1 * W1
 {
-	int i,j,k;
-	double sum;
-	for(i=0;i<H1;i++)
-		for(j=0;j<W1;j++)
+	double sum = 0;
+	for(int i = 0; i < H1; i++)
+		for(int j = 0; j < W1; j++)
 		{
-			sum=0;
-			for(k=0;k<K1;k++)
-				sum+=D[i][k]*f[k][j];
-			temp[i][j]=sum;
+			sum = 0;
+			for(int k = 0;k < K1; k++)
+				sum += mat1[i][k] * mat2[k][j];
+			resMat[i][j] = sum;
 		}
 }
-// TO-DO
+// TO-DO verify whether is correct
 /*矩阵求逆****A为一维数组*/ 
 double *MatrixOpp(double A[],int   m,int   n)  
 { 
-	int   i,j,x,y,k; 
-	double   *SP=NULL,*AB=NULL,*B=NULL,X,*C; 
-	SP=(double   *)malloc(m*n*sizeof(double)); 
-	AB=(double   *)malloc(m*n*sizeof(double)); 
-	B=(double   *)malloc(m*n*sizeof(double)); 
+	double *SP = NULL
+	double *AB = NULL;
+	double *B = NULL;
+	double X;
+	double *C = NULL; 
+	SP=(double *)malloc(m * n * sizeof(double)); 
+	AB=(double *)malloc(m * n * sizeof(double)); 
+	B = (double *)malloc(m * n * sizeof(double)); 
 
-	
-	X=Surplus(A,m,n); 
-	X=1.00/X; 
+	X = Surplus(A,m,n); 
+	X = 1.00 / X; 
 
-	for(i=0;i <m;i++) 
-		for(j=0;j <n;j++) 
+	for(int i = 0;i < m;i++) 
+		for(int j = 0;j < n;j++) 
 		{ 
-			for(k=0;k <m*n;k++) 
+			for(int k = 0;k < m * n; k++) 
 				B[k]=A[k]; 
+			
 			{ 
-				for(x=0;x <n;x++) 
+				for(int x=0;x <n;x++) 
 					B[i*n+x]=0; 
-				for(y=0;y <m;y++) 
+				for(int y=0;y <m;y++) 
 					B[m*y+j]=0; 
 				B[i*n+j]=1; 
 				SP[i*n+j]=Surplus(B,m,n); 
 				AB[i*n+j]=X*SP[i*n+j]; 
 			} 
 		} 
-		C=MatrixInver(AB,m,n); 
+		C=MatrixInver(AB, m, n); 
 
 		return   C; 
 } 
 
+// TO-DO: 修改边界扩展至2行2列，模式3与4采用不同的估计方式
 // img_padding 左边和上边填128，row和col分别从1开始索引img_padding
 //int mode_cal_u(double **img_padding, int row, int col, int mode)
 //{
@@ -434,16 +436,14 @@ void estimate(short **img, double **para, int width, int height)
 }
 
 /*矩阵转置*/ 
-double *MatrixInver(double A[],int   m,int   n)   
+double *MatrixInver(double A[], int m, int n)   
 { 
-	int   i,j; 
-	double   *B=NULL; 
-	B=(double   *)malloc(m*n*sizeof(double)); 
+	double *B = (double *)malloc(m * n * sizeof(double)); 
 
-	for(i=0;i <n;i++) 
-		for(j=0;j <m;j++) 
-			B[i*m+j]=A[j*n+i];         
-	return   B; 
+	for(int i = 0;i <n;i++) 
+		for(int j = 0;j < m;j++) 
+			B[i * m + j] = A[j * n + i];         
+	return B; 
 } 
  /*求矩阵行列式*/
 double Surplus(double A[],int m,int n)   
@@ -488,7 +488,6 @@ double Surplus(double A[],int m,int n)
 	} 
 	return   X; 
 }   
-
 
 int main(int argc, char *argv[])
 {
@@ -675,6 +674,10 @@ int main(int argc, char *argv[])
 	 * 3. transform the residual of prediction
 	 *************************************************************/
 	// 预测后的变换
+
+
+	// TO-DO: 后期DCT变换划分模块时，再修改成函数调用方式以重构
+	// 计算DCT系数
 	for(int i=0;i<height;i++)
 	{
 		if(i == 0) 
@@ -690,6 +693,7 @@ int main(int argc, char *argv[])
 	//行DCT变换
 	Mult(DCT, resi, temp, height, width, height);	
 
+	// TO-DO: 后期DCT变换划分模块时，修改成函数调用的方式以重构
 	//ODST-3系数
 	for (int i = 0; i < height; i++)
 	{
@@ -704,7 +708,7 @@ int main(int argc, char *argv[])
 	Mult(temp, ODST, F, height, width, height);	
 	printf("变换结束\n");
 
-	// 行DCT变换，列ODST变换后的值
+	// 打印调试信息：行DCT变换，列ODST变换后的值
 	FILE *fout_ODST = fopen("output1.txt", "w");
 	assert(fout_ODST);
 	for (int i = 0; i < height; ++i)
@@ -749,5 +753,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-
-
