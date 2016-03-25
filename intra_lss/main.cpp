@@ -324,7 +324,7 @@ double *MatrixOpp(double A[],int   m,int   n)
 //	}
 //	
 //}
-void calcupara(short **img, double **para, int width, int height);
+
 
 void estimate(short **img, double **para, int width, int height)
 {
@@ -358,23 +358,23 @@ void estimate(short **img, double **para, int width, int height)
 	
 	
 	short **matrix_in = NULL;
-	matrix_in = (short **)calloc(height + 1,sizeof(short *));//新建数组，开辟空间，多开辟出一行一列存储上边和左边的邻近像素
+	matrix_in = (short **)calloc(height + 4,sizeof(short *));//新建数组，开辟空间，多开辟出一行一列存储上边和左边的邻近像素
 
 	for(int j = 0; j < height + 1; j++)
 	{
-		matrix_in[j] = (short *)calloc(width + 1,sizeof(short));
+		matrix_in[j] = (short *)calloc(width + 4,sizeof(short));
 	}
 
-	for(int i = 0; i < height + 1; i++)    //将输入图像值赋值给数组
+	for(int i = 0; i < height + 4; i++)    //将输入图像值赋值给数组
 	{
-		for(int j = 0; j < width + 1; j++)
+		for(int j = 0; j < width + 4; j++)
 		{
-			if((i == 0) || (j == 0))
+			if((i == 0) || (i == 1) || (i == height + 2) || (i == height + 3) || (j == 0) || (j == 1) ||  || (j == width + )
 			{
 				matrix_in[i][j] = 128;
 			}
 			else
-				matrix_in[i][j] = img[i-1][j-1];
+				matrix_in[i][j] = img[i - 2][j - 2];
 		}
 	}
 
