@@ -18,6 +18,32 @@
 const int mode = 0;			// mode for predcition 0~8 in 4 x 4
 const double PI = 3.1415;
 
+// print a matrix to a file for debugging
+int print_matrix_to_file(double **mat, int rows, int cols, const char *filename)
+{
+	FILE *fout = fopen(filename, "w");
+	assert(fout);
+	for (int i = 0; i < rows; ++i)
+	{
+		for (int j = 0; j < cols; ++j)
+			fprintf(fout, "%6.2f, ", mat[i][j]);
+		fprintf(fout, "\n");
+	}
+	fclose(fout);
+}
+int print_matrix_to_file(short **mat, int rows, int cols, const char *filename)
+{
+	FILE *fout = fopen(filename, "w");
+	assert(fout);
+	for (int i = 0; i < rows; ++i)
+	{
+		for (int j = 0; j < cols; ++j)
+			fprintf(fout, "%4d", mat[i][j]);
+		fprintf(fout, "\n");
+	}
+	fclose(fout);
+}
+
 // format transformation for input img file to little endian
 // img:		output
 // img_in:	origin img
@@ -275,7 +301,7 @@ double *MatrixOpp(double A[],int   m,int   n)
 		return   C; 
 } 
 
-// TO-DO: 修改边界扩展至2行2列，模式3与4采用不同的估计方式
+// TO-DO: 修改边界扩展至4行4列，模式3与4采用不同的估计方式
 // img_padding 左边和上边填128，row和col分别从1开始索引img_padding
 //int mode_cal_u(double **img_padding, int row, int col, int mode)
 //{
@@ -377,15 +403,14 @@ void estimate(short **img, double **para, int width, int height)
 				matrix_in[i][j] = img[i - 2][j - 2];
 		}
 	}
+	print_matrix_to_file(matrix_in, height + 4, width + 4, "matrix_in.txt");
 
 	//判断模式，根据不同模式给左边，左上，上边元素进行赋值，再调用下面的计算公式
-
-	for(int i = 1; i < height  + 1 ; ++i )
+	//0,1,4,5,6模式可以用下面公式计算
+	for(int i = 2; i < height + 2; ++i)
 	{
-		for(int j = 1; j < width + 1; ++j)
+		for(int j = 2; j < width + 2; ++j)
 		{
-
-
 
 			paraA[0][0] += matrix_in[i - 1][j] * matrix_in[i - 1][j];
 			paraA[0][1] += matrix_in[i - 1][j] * matrix_in[i - 1][j - 1];
@@ -399,6 +424,44 @@ void estimate(short **img, double **para, int width, int height)
 
 		}
 	}
+
+	//3,7模式可以用下面公式计算
+	for(int i = height + 1; i > 1 ; --i )
+	{
+		for(int j = width + 1; j > 1; --j)
+		{
+
+			paraA[0][0] += matrix_in[i - 1][j] * matrix_in[i - 1][j];
+			paraA[0][1] += matrix_in[i - 1][j] * matrix_in[i - 1][j - 1];
+			paraA[0][2] += matrix_in[i - 1][j] * matrix_in[i][j - 1];
+			paraA[1][0] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j];
+			paraA[1][1] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j - 1];
+			paraA[1][2] += matrix_in[i - 1][j - 1] * matrix_in[i][j - 1];
+			paraA[2][0] += matrix_in[i][j - 1] * matrix_in[i - 1][j];
+			paraA[2][1] += matrix_in[i][j - 1] * matrix_in[i - 1][j - 1];
+			paraA[2][2] += matrix_in[i][j - 1] * matrix_in[i][j - 1];
+
+		}
+	}
+	//8模式可以用下面公式计算
+	for(int i = height + 1; i > 1 ; --i )
+	{
+		for(int j = 2; j > width + 2; ++j)
+		{
+
+			paraA[0][0] += matrix_in[i - 1][j] * matrix_in[i - 1][j];
+			paraA[0][1] += matrix_in[i - 1][j] * matrix_in[i - 1][j - 1];
+			paraA[0][2] += matrix_in[i - 1][j] * matrix_in[i][j - 1];
+			paraA[1][0] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j];
+			paraA[1][1] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j - 1];
+			paraA[1][2] += matrix_in[i - 1][j - 1] * matrix_in[i][j - 1];
+			paraA[2][0] += matrix_in[i][j - 1] * matrix_in[i - 1][j];
+			paraA[2][1] += matrix_in[i][j - 1] * matrix_in[i - 1][j - 1];
+			paraA[2][2] += matrix_in[i][j - 1] * matrix_in[i][j - 1];
+
+		}
+	}
+
 	// 矩阵求逆l
 	double *res_temp = MatrixOpp((double   *)paraA, 3, 3); 
 	
