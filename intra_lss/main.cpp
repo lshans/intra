@@ -268,7 +268,7 @@ void Mult(double **mat1, double **mat2,double **resMat, int H1, int W1, int K1)	
 /*矩阵求逆****A为一维数组*/ 
 double *MatrixOpp(double A[],int   m,int   n)  
 { 
-	double *SP = NULL
+	double *SP = NULL;
 	double *AB = NULL;
 	double *B = NULL;
 	double X;
@@ -385,25 +385,14 @@ void estimate(short **img, double **para, int width, int height)
 	
 	short **matrix_in = NULL;
 	matrix_in = (short **)calloc(height + 4,sizeof(short *));//新建数组，开辟空间，多开辟出一行一列存储上边和左边的邻近像素
-
 	for(int j = 0; j < height + 1; j++)
-	{
 		matrix_in[j] = (short *)calloc(width + 4,sizeof(short));
-	}
+	memset(matrix_in, 128, sizeof(short));
 
-	for(int i = 0; i < height + 4; i++)    //将输入图像值赋值给数组
-	{
-		for(int j = 0; j < width + 4; j++)
-		{
-			if((i == 0) || (i == 1) || (i == height + 2) || (i == height + 3) || (j == 0) || (j == 1) ||  || (j == width + )
-			{
-				matrix_in[i][j] = 128;
-			}
-			else
-				matrix_in[i][j] = img[i - 2][j - 2];
-		}
-	}
-	print_matrix_to_file(matrix_in, height + 4, width + 4, "matrix_in.txt");
+	short **matrix_in_offset = (short **)&matrix_in[2][2];
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+			matrix_in_offset[i][j] = img[i][j];
 
 	//判断模式，根据不同模式给左边，左上，上边元素进行赋值，再调用下面的计算公式
 	//0,1,4,5,6模式可以用下面公式计算
