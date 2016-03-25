@@ -10,6 +10,9 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B0FDC56A-A8A4-49B8-ABF9-F2DDCDBE33E4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -73,12 +76,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="F:\备份\pre1.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="F:\备份\Projects\compress\compress\03.raw" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

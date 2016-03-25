@@ -15,13 +15,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="F:\备份\pre1.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="F:\备份\Projects\compress\compress\03.raw">
-      <Filter>资源文件</Filter>
-    </None>
   </ItemGroup>
 </Project>
