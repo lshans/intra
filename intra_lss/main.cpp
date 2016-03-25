@@ -30,6 +30,7 @@ int print_matrix_to_file(double **mat, int rows, int cols, const char *filename)
 		fprintf(fout, "\n");
 	}
 	fclose(fout);
+	return 0;
 }
 int print_matrix_to_file(short **mat, int rows, int cols, const char *filename)
 {
@@ -42,6 +43,7 @@ int print_matrix_to_file(short **mat, int rows, int cols, const char *filename)
 		fprintf(fout, "\n");
 	}
 	fclose(fout);
+	return 0;
 }
 
 // format transformation for input img file to little endian
@@ -382,13 +384,12 @@ void estimate(short **img, double **para, int width, int height)
 	//para = (doule *)calloc(3, sizeof(double));
 	
 	
-	
+	// 扩充原始块，用128填充上下各两行，左右各两列
 	short **matrix_in = NULL;
-	matrix_in = (short **)calloc(height + 4,sizeof(short *));//新建数组，开辟空间，多开辟出一行一列存储上边和左边的邻近像素
-	for(int j = 0; j < height + 1; j++)
-		matrix_in[j] = (short *)calloc(width + 4,sizeof(short));
+	matrix_in = (short **)calloc(height + 4,sizeof(short *));
+	for(int i = 0; i < height + 4; i++)
+		matrix_in[i] = (short *)calloc(width + 4,sizeof(short));
 	memset(matrix_in, 128, sizeof(short));
-
 	short **matrix_in_offset = (short **)&matrix_in[2][2];
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
@@ -396,63 +397,74 @@ void estimate(short **img, double **para, int width, int height)
 
 	//判断模式，根据不同模式给左边，左上，上边元素进行赋值，再调用下面的计算公式
 	//0,1,4,5,6模式可以用下面公式计算
-	for(int i = 2; i < height + 2; ++i)
+	for(int i = 0; i < height; ++i)
 	{
-		for(int j = 2; j < width + 2; ++j)
+		for(int j = 0; j < width; ++j)
 		{
-
-			paraA[0][0] += matrix_in[i - 1][j] * matrix_in[i - 1][j];
-			paraA[0][1] += matrix_in[i - 1][j] * matrix_in[i - 1][j - 1];
-			paraA[0][2] += matrix_in[i - 1][j] * matrix_in[i][j - 1];
-			paraA[1][0] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j];
-			paraA[1][1] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j - 1];
-			paraA[1][2] += matrix_in[i - 1][j - 1] * matrix_in[i][j - 1];
-			paraA[2][0] += matrix_in[i][j - 1] * matrix_in[i - 1][j];
-			paraA[2][1] += matrix_in[i][j - 1] * matrix_in[i - 1][j - 1];
-			paraA[2][2] += matrix_in[i][j - 1] * matrix_in[i][j - 1];
-
+			paraA[0][0] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i - 1][j];
+			paraA[0][1] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i - 1][j - 1];
+			paraA[0][2] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i][j - 1];
+			paraA[1][0] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i - 1][j];
+			paraA[1][1] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i - 1][j - 1];
+			paraA[1][2] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i][j - 1];
+			paraA[2][0] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i - 1][j];
+			paraA[2][1] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i - 1][j - 1];
+			paraA[2][2] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i][j - 1];
+			
+			paraB[0][0] += matrix_in_offset[i][j] * matrix_in_offset[i - 1][j];
+			paraB[1][0] += matrix_in_offset[i][j] * matrix_in_offset[i - 1][j - 1];
+			paraB[2][0] += matrix_in_offset[i][j] * matrix_in_offset[i][j - 1];
 		}
 	}
 
 	//3,7模式可以用下面公式计算
-	for(int i = height + 1; i > 1 ; --i )
+	for(int i = height - 1; i >= 0; --i)
 	{
-		for(int j = width + 1; j > 1; --j)
+		for(int j = width - 1; j >= 0; --j)
 		{
+			paraA[0][0] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i - 1][j];
+			paraA[0][1] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i - 1][j - 1];
+			paraA[0][2] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i][j - 1];
+			paraA[1][0] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i - 1][j];
+			paraA[1][1] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i - 1][j - 1];
+			paraA[1][2] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i][j - 1];
+			paraA[2][0] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i - 1][j];
+			paraA[2][1] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i - 1][j - 1];
+			paraA[2][2] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i][j - 1];
 
-			paraA[0][0] += matrix_in[i - 1][j] * matrix_in[i - 1][j];
-			paraA[0][1] += matrix_in[i - 1][j] * matrix_in[i - 1][j - 1];
-			paraA[0][2] += matrix_in[i - 1][j] * matrix_in[i][j - 1];
-			paraA[1][0] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j];
-			paraA[1][1] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j - 1];
-			paraA[1][2] += matrix_in[i - 1][j - 1] * matrix_in[i][j - 1];
-			paraA[2][0] += matrix_in[i][j - 1] * matrix_in[i - 1][j];
-			paraA[2][1] += matrix_in[i][j - 1] * matrix_in[i - 1][j - 1];
-			paraA[2][2] += matrix_in[i][j - 1] * matrix_in[i][j - 1];
-
+			paraB[0][0] += matrix_in_offset[i][j] * matrix_in_offset[i - 1][j];
+			paraB[1][0] += matrix_in_offset[i][j] * matrix_in_offset[i - 1][j - 1];
+			paraB[2][0] += matrix_in_offset[i][j] * matrix_in_offset[i][j - 1];
 		}
 	}
 	//8模式可以用下面公式计算
-	for(int i = height + 1; i > 1 ; --i )
+	for(int i = height - 1; i >= 0 ; --i)
 	{
-		for(int j = 2; j > width + 2; ++j)
+		for(int j = 0; j < width; ++j)
 		{
+			paraA[0][0] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i - 1][j];
+			paraA[0][1] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i - 1][j - 1];
+			paraA[0][2] += matrix_in_offset[i - 1][j]     * matrix_in_offset[i][j - 1];
+			paraA[1][0] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i - 1][j];
+			paraA[1][1] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i - 1][j - 1];
+			paraA[1][2] += matrix_in_offset[i - 1][j - 1] * matrix_in_offset[i][j - 1];
+			paraA[2][0] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i - 1][j];
+			paraA[2][1] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i - 1][j - 1];
+			paraA[2][2] += matrix_in_offset[i][j - 1]     * matrix_in_offset[i][j - 1];
 
-			paraA[0][0] += matrix_in[i - 1][j] * matrix_in[i - 1][j];
-			paraA[0][1] += matrix_in[i - 1][j] * matrix_in[i - 1][j - 1];
-			paraA[0][2] += matrix_in[i - 1][j] * matrix_in[i][j - 1];
-			paraA[1][0] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j];
-			paraA[1][1] += matrix_in[i - 1][j - 1] * matrix_in[i - 1][j - 1];
-			paraA[1][2] += matrix_in[i - 1][j - 1] * matrix_in[i][j - 1];
-			paraA[2][0] += matrix_in[i][j - 1] * matrix_in[i - 1][j];
-			paraA[2][1] += matrix_in[i][j - 1] * matrix_in[i - 1][j - 1];
-			paraA[2][2] += matrix_in[i][j - 1] * matrix_in[i][j - 1];
-
+			paraB[0][0] += matrix_in_offset[i][j] * matrix_in_offset[i - 1][j];
+			paraB[1][0] += matrix_in_offset[i][j] * matrix_in_offset[i - 1][j - 1];
+			paraB[2][0] += matrix_in_offset[i][j] * matrix_in_offset[i][j - 1];
 		}
 	}
 
+	for (int i = 0; i < height + 4; ++i)
+		free(matrix_in[i]);
+	free(matrix_in);
+
+
 	// 矩阵求逆l
-	double *res_temp = MatrixOpp((double   *)paraA, 3, 3); 
+	double *res_temp = MatrixOpp((double *)paraA, 3, 3); 
 	
 	for (int i = 0; i < 3; ++i)
 		for (int j = 0; j < 3; ++j)
@@ -470,20 +482,19 @@ void estimate(short **img, double **para, int width, int height)
 		fclose(fout);
 	}
 
-	for(int i = 1; i < height + 1; ++i )
-	{
-		for(int j = 1; j < width + 1; ++j)
-		{
-			paraB[0][0] += matrix_in[i][j] * matrix_in[i - 1][j];
-
-			paraB[1][0] += matrix_in[i][j] * matrix_in[i - 1][j - 1];
-
-			paraB[2][0] += matrix_in[i][j] * matrix_in[i][j - 1];
-		}
-	}
-
-	//矩阵result 与B相乘
+	//矩阵result 与paraB相乘
 	Mult(result, paraB, para, 3, 1, 3);
+	for (int i = 0; i < 3; ++i)
+	{
+		free(result[i]);
+		free(paraA[i]);
+		free(paraB[i]);
+	}
+	free(result);
+	free(paraA);
+	free(paraB);
+
+
 	
 }
 
