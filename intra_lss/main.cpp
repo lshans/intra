@@ -1,9 +1,9 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
 #include <cassert>
+#include "pre.h"
 
 /********************************************************************************************
  * date: 2016.3 by lss
@@ -17,6 +17,19 @@
 
 const int mode = 0;			// mode for predcition 0~8 in 4 x 4
 const double PI = 3.1415;
+short smallimage[256][256][8][8];	// 全局块
+short dc_left_image[256][256][8][8];
+short dc_top_image[256][256][8][8];
+short dc_image[256][256][8][8];
+short h_image[256][256][8][8];
+short v_image[256][256][8][8];
+short ddl_image[256][256][8][8];
+short ddr_image[256][256][8][8];
+short vr_image[256][256][8][8];
+short hd_image[256][256][8][8];
+short vl_image[256][256][8][8];
+short hu_image[256][256][8][8];
+//void imagecut(int argc, char *argv[]);
 
 // print a matrix to a file for debugging
 int print_matrix_to_file(double **mat, int rows, int cols, const char *filename)
@@ -56,6 +69,7 @@ void transformat(short **img, unsigned char *img_in, int height, int width, int 
 // pre:		output of prediction value
 // resi:	output of residual
 void predict(short **img, double **pre, double **resi, int height, int width);
+//void predict_264(short **img, double **pre, double **resi, int height, int width);
 
 // estimate prediction param
 // img:		input img value
@@ -192,6 +206,7 @@ void  predict(short **img, double **pre, double **resi, int height, int width)
 			//SW = tb[i-1][j+1];
 			//short pre = paramter_4x4_MSE[0][8] * W + paramter_4x4_MSE[1][8] * NW + paramter_4x4_MSE[2][8] * N + paramter_4x4_MSE[3][8] * SW;
 
+
 			resi[i-1][j-1] = tb[i][j] - pre[i-1][j-1];//预测残差
 		}
 	}
@@ -208,8 +223,8 @@ void transformat(short **img, unsigned char *img_in,  int height, int width, int
 
 	else if((precision >= 8) && (precision <= 16))
 	{
-		for(i = 0; i < height; i++)
-			for(j = 0; j < width; j++)
+		for(int i = 0; i < height; i++)
+			for(int j = 0; j < width; j++)
 			{
 				if(endian == 0) //大端 
 					img[i][j] = (short)(img_in[(i * width + j)*2] * 256 + img_in[(i * width + j) * 2 + 1]);
@@ -337,12 +352,12 @@ double *MatrixOpp(double A[],int   m,int   n)
 //	}
 //	
 //}
-void AccumulateParaAB(short **paraA, short **paraB, short **matrix_in_offset, int x, int y, int mode)
-{
+void AccumulateParaAB(double **paraA, double **paraB, short **matrix_in_offset, int x, int y, int mode)
+{   //需要调整多个块累加的程序。。。。??
 	static double u[2][2];	// u[y][x] equals to u(x, y)
 	switch (mode)
 	{
-	case 0, 1, 2:
+	case 0: case 1: case 2:
 		u[1][0] = matrix_in_offset[y][x - 1];
 		u[0][1] = matrix_in_offset[y - 1][x];
 		u[0][0] = matrix_in_offset[y - 1][x - 1];
@@ -427,8 +442,8 @@ void estimate(short **img, double **para, int width, int height)
 		para[i] = (double *)calloc(1,sizeof(double));
 	}
 	
-	// 扩充原始块，用128填充上下各两行，左右各两列
-	short **matrix_in = NULL;
+	// 扩充原始块，用128填充上下各四行，左右各四列
+	/*short **matrix_in = NULL;
 	matrix_in = (short **)calloc(height + 4,sizeof(short *));
 	for(int i = 0; i < height + 4; i++)
 		matrix_in[i] = (short *)calloc(width + 4,sizeof(short));
@@ -436,20 +451,22 @@ void estimate(short **img, double **para, int width, int height)
 	short **matrix_in_offset = (short **)&matrix_in[2][2];
 	for (int i = 0; i < height; ++i)
 		for (int j = 0; j < width; ++j)
-			matrix_in_offset[i][j] = img[i][j];
+			matrix_in_offset[i][j] = img[i][j];*/
+
+	 
 
 	// TO-DO: for_each mode = 0~8;
 	int mode = 0;
 	//判断模式，根据不同模式给左边，左上，上边元素进行赋值，再调用下面的计算公式
 	switch (mode)
 	{
-	case 0,1,4,5,6:
+	case 0: case 1: case 4: case 5: case 6:
 		//0,1,4,5,6模式可以用下面公式计算
 		for(int i = 0; i < height; ++i)
 			for(int j = 0; j < width; ++j)
 				AccumulateParaAB(paraA, paraB, matrix_in_offset, j, i, mode);
 		break;
-	case 3, 7:
+	case 3: case 7:
 		//3,7模式可以用下面公式计算
 		for(int i = height - 1; i >= 0; --i)
 			for(int j = width - 1; j >= 0; --j)
@@ -569,6 +586,11 @@ int main(int argc, char *argv[])
 	int  precision;						// 原图比特精度，一般8bit
 	unsigned char *img_in = NULL;		// 原始图像的输入
 	short **img = NULL;					// 原始图像大小端转换后的数据
+	//int  row = 128;                       // 将图像分成小块，每一行的图像块数目
+	//int  col = 128;                       // 将图像分成小块，每一列的图像块数目
+	
+	//int  smallheight = 4;               // 小图的行数
+	//int  smallwidth  = 4;               // 小图的列数
 	
 	double **para = NULL;				// 估计的预测参数
 	double **pre = NULL;				// 预测后的图像数据
@@ -634,7 +656,7 @@ int main(int argc, char *argv[])
 	*/
 
 // 1. 读入参数
-	if(argc != 7)
+	if(argc != 9)
 	{
 		printf("please input :infile outfile height width endian precision\n");
 		return 0;
@@ -643,6 +665,8 @@ int main(int argc, char *argv[])
 	width  = (int)atoi(argv[4]);
 	endian = (int)atoi(argv[5]);
 	precision = (int)atoi(argv[6]);
+	smallheight = (int)atoi(argv[7]);
+	smallwidth = (int)atoi(argv[8]);
 	img_size = height * width;
 	resi_size = height * width;
 	img_in = (unsigned char *)calloc(img_size, sizeof(char));//如果分配成功则返回指向被分配内存的指针，否则返回空指针NULL
@@ -707,23 +731,43 @@ int main(int argc, char *argv[])
 	//	printf("oppenning error fileout\n");
 	//	exit(0);
 	//}
+	//image cut 
+	//char cutpara[9][100] = {"", "03.raw", "1024", "1024", "8", "256", "256", "4", "4"};
+	
+	//imagecut(9, (char **)cutpara);
+
 	
 
 
 	// 大小端格式转换
-	transformat(img,img_in, height, width, endian, precision);
-	
+	transformat(img, img_in, height, width, endian, precision);
+
+	// 将图像分成小块，每一个图像块的行坐标为i_row ，每一个图像块的列坐标i_col
+	for (int i_row = 0; i_row < row; ++i_row)
+	{
+		for (int i_col = 0; i_col < col; ++i_col)
+		{
+			for (int i = 0; i < smallheight; ++i)
+			{
+				for (int j = 0; j < smallwidth; ++j)
+				{
+					smallimage[i_row][i_col][i][j] = img[i_row * smallheight + i][i_col * smallwidth + j];
+
+				}
+			}	
+		}
+	}
 	/**************************************************************
 	 * 1. estimate prediction param of 9 modes for block of 4 x 4 and 4 modes for block of 16 x 16
 	 *    by Markov prediction method
 	 *************************************************************/
 	//估计用于预测的邻近像素权值
-	estimate(img, para, width, height);
+	//estimate(img, para, width, height);
 
 	/**************************************************************
 	 * 2. use estimated prediction param to predict
 	 *************************************************************/
-	predict(img, pre, resi, height, width);
+	//predict(img, pre, resi, height, width);
 
 	// 打印残差矩阵进行调试
 	FILE *fout = fopen("output.txt", "w");
