@@ -1,7 +1,8 @@
 #include "pre.h"
-#define FDEC_STRIDE 32
+//#define FDEC_STRIDE 32
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
+const int FDEC_STRIDE = 8 * 8;	// 8x8 block
 
 //inline void PREDICT_4x4_DC(uint8_t *src, short v)    //本函数对4x4块的每行像素赋同样的值
 //{
@@ -42,15 +43,15 @@ static void predict_4x4_dc_128(uint8_t *src)
 // 用宏块左方四个像素（I、J、K、L）的均值对所有像素覆盖
 static void predict_4x4_dc_left(uint8_t *src)
 {
-	uint32_t dc = ((src[-1 + 0 * FDEC_STRIDE] + src[-1 + FDEC_STRIDE] +
-	src[2 - FDEC_STRIDE] + src[3 - FDEC_STRIDE] + 2) >> 2) * 0x01010101;
+	uint32_t dc = ((src[-1 + 0 * FDEC_STRIDE] + src[-1 + 1 * FDEC_STRIDE] +
+	src[-1 + 2 * FDEC_STRIDE] + src[-1 + 3 * FDEC_STRIDE] + 2) >> 2) * 0x01010101;
 	PREDICT_4x4_DC(dc);
 }
 
 // 用宏块上方四个像素（A、B、C、D）的均值对所有像素覆盖
 static void predict_4x4_dc_top(uint8_t *src)
 {
-	uint32_t dc = ((src[-1 + 0 * FDEC_STRIDE] + src[-1 + FDEC_STRIDE] +
+	uint32_t dc = ((src[0 - FDEC_STRIDE] + src[1 - FDEC_STRIDE] +
 		src[2 - FDEC_STRIDE] + src[3 - FDEC_STRIDE] + 2) >> 2) * 0x01010101;
 	PREDICT_4x4_DC(dc);
 }
@@ -58,10 +59,10 @@ static void predict_4x4_dc_top(uint8_t *src)
 // 用宏块左边和上方八个像素（I、J、K、L、A、B、C、D）的均值对所有像素覆盖
 static void predict_4x4_dc(uint8_t *src)
 {
-	uint32_t dc = ((src[-1 + 0 * FDEC_STRIDE] + src[-1 + FDEC_STRIDE] +
+	uint32_t dc = (( src[-1 + 0 * FDEC_STRIDE] + src[-1 + 1 * FDEC_STRIDE] +
 		src[-1 + 2 * FDEC_STRIDE] + src[-1 + 3 * FDEC_STRIDE] +
 		src[0 - FDEC_STRIDE] + src[1 - FDEC_STRIDE] +
-		src[2 - FDEC_STRIDE] + src[3 - FDEC_STRIDE] + 4) >> 2) * 0x01010101;
+		src[2 - FDEC_STRIDE] + src[3 - FDEC_STRIDE] + 4 ) >> 3) * 0x01010101;
 	PREDICT_4x4_DC(dc);
 }
 
@@ -260,8 +261,235 @@ static void predict_4x4_hu(uint8_t *src)
 	src[3*FDEC_STRIDE+3]= l3;                              //---k=l=m=n=o=p=L
 }
 
+int CalcBestResi(double **resi, int i_row, int i_col)
+{
+	unsigned int R[11];
+	for (int i = 0; i < 10; ++i)
+		R[i] = 0;
+
+	uint8_t resi_temp[8][8];
+	memset(temp, 0, 8 * 8);
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - dc_left_image[i_row][i_col][i][j];//预测残差
+			R[0] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - dc_top_image[i_row][i_col][i][j];//预测残差
+			R[1] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - dc_image[i_row][i_col][i][j];//预测残差
+			R[2] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - h_image[i_row][i_col][i][j];//预测残差
+			R[3] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - v_image[i_row][i_col][i][j];//预测残差
+			R[4] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - ddl_image[i_row][i_col][i][j];//预测残差
+			R[5] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - ddr_image[i_row][i_col][i][j];//预测残差
+			R[6] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - vr_image[i_row][i_col][i][j];//预测残差
+			R[7] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - hd_image[i_row][i_col][i][j];//预测残差
+			R[8] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - vl_image[i_row][i_col][i][j];//预测残差
+			R[9] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+
+	for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+	{
+		for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+		{
+			resi_temp[i][j] = smallimage[i_row][i_col][i][j] - hu_image[i_row][i_col][i][j];//预测残差
+			R[10] += resi_temp[i][j] * resi_temp[i][j];
+		}
+	}
+
+	int modeMinRes = 0;
+	int minRes = R[modeMinRes];
+	for (int i = 0; i < 11; ++i)
+	{
+		if (R[i] < R[modeMinRes])
+		{
+			modeMinRes = i;
+			minRes = R[i];
+		}
+	}
+	switch (modeMinRes)
+	{
+	case 0:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - dc_left_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 1:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - dc_top_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 2:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - dc_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 3:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - h_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 4:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - v_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 5:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - ddl_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 6:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - ddr_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 7:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - vr_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 8:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - hd_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 9:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - vl_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+
+	case 10:
+		for (int i = 2; i < BLOCKHEIGHT - 2; ++i)
+		{
+			for (int j = 2; j < BLOCKWIDTH - 2; ++j)
+			{
+				resi[i_row * BLOCKHEIGHT + i - 2][i_col * BLOCKWIDTH + j - 2] = smallimage[i_row][i_col][i][j] - hu_image[i_row][i_col][i][j];//预测残差
+			}
+		}
+		break;
+	default:
+		break;
+	}
+	return minRes;
+
+}
+
 // 对各个图像块按12种预测模式进行预测，选出最好的一种得到残差
-void predict(short **img, double **pre, double **resi, int height, int width)
+void predict(uint8_t **img, double **pre, double **resi, int height, int width)
 {
 	for (int i_row = 0; i_row < ROWS; ++i_row)
 	{
@@ -269,7 +497,7 @@ void predict(short **img, double **pre, double **resi, int height, int width)
 		{
 			for(int mode = 0; mode < 10; ++mode)
 			{
-				//将输入图像读成8x8图像块（边界扩展后），赋值给用来存储每一种预测模式输入图像的数组
+				// 将输入图像读成8x8图像块（边界扩展后），赋值给用来存储每一种预测模式输入图像的数组
 				for (int i = 0; i < BLOCKHEIGHT; ++i)
 				{
 					for (int j = 0; j < BLOCKWIDTH; ++j)
@@ -288,29 +516,22 @@ void predict(short **img, double **pre, double **resi, int height, int width)
 						hu_image[i_row][i_col][i][j] = smallimage[i_row][i_col][i][j];
 					}
 				}
-				//分别按照11种模式对图像块进行预测
-				predict_4x4_dc_left((uint8_t *)(dc_left_image[i_row][i_col]));
-				predict_4x4_dc_top((uint8_t *)(dc_top_image[i_row][i_col]));
-				predict_4x4_dc((uint8_t *)(dc_image[i_row][i_col]));
-				predict_4x4_h((uint8_t *)(h_image[i_row][i_col]));
-				predict_4x4_v((uint8_t *)(v_image[i_row][i_col]));
-				predict_4x4_ddl((uint8_t *)(ddl_image[i_row][i_col]));
-				predict_4x4_ddr((uint8_t *)(ddr_image[i_row][i_col]));
-				predict_4x4_vr((uint8_t *)(vr_image[i_row][i_col]));
-				predict_4x4_hd((uint8_t *)(hd_image[i_row][i_col]));
-				predict_4x4_hl((uint8_t *)(hl_image[i_row][i_col]));
-				predict_4x4_hu((uint8_t *)(hu_image[i_row][i_col]));
+				// 分别按照11种模式对图像块进行预测
+				predict_4x4_dc_left((uint8_t *)(&dc_left_image[i_row][i_col][2][2]));
+				predict_4x4_dc_top((uint8_t *)(&dc_top_image[i_row][i_col][2][2]));
+				predict_4x4_dc((uint8_t *)(&dc_image[i_row][i_col][2][2]));
+				predict_4x4_h((uint8_t *)(&h_image[i_row][i_col][2][2]));
+				predict_4x4_v((uint8_t *)(&v_image[i_row][i_col][2][2]));
+				predict_4x4_ddl((uint8_t *)(&ddl_image[i_row][i_col][2][2]));
+				predict_4x4_ddr((uint8_t *)(&ddr_image[i_row][i_col][2][2]));
+				predict_4x4_vr((uint8_t *)(&vr_image[i_row][i_col][2][2]));
+				predict_4x4_hd((uint8_t *)(&hd_image[i_row][i_col][2][2]));
+				predict_4x4_hl((uint8_t *)(&hl_image[i_row][i_col][2][2]));
+				predict_4x4_hu((uint8_t *)(&hu_image[i_row][i_col][2][2]));
 
 				//计算对每一种预测模式的预测残差，并比较残差能量，将能量最低的预测模式下的残差保留继续进行变换、量化、逆量化、逆变换，结果再与
 				//预测值进行相加得到重建块，重建块的某些值作为下一个块的邻近参考像素值
-				for (int i = 4; i < smallheight; ++i)
-				{
-					for (int j = 4; j < smallwidth; ++j)
-					{
-						resi_dc_left[i_row][i_col][i][j] = smallimage[i_row][i_col][i][j] - dc_left_image[i_row][i_col][i][j];//预测残差
-						R_dc_left += resi_dc_left[i_row][i_col][i][j] * resi_dc_left[i_row][i_col][i][j];
-					}
-				}
+				CalcBestResi(resi, i_row, i_col);
 			}
 		}
 	}

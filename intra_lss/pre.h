@@ -1,6 +1,7 @@
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
-#define FDEC_STRIDE 32
+//#define FDEC_STRIDE 32
+const int FDEC_STRIDE = 64;
 //#define smallheight 8               // 小图的行数
 //#define smallwidth  8              // 小图的列数
 //#define row        128                      // 将图像分成小块，每一行的图像块数目

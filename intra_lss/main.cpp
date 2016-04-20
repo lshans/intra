@@ -17,18 +17,18 @@
 
 const int mode = 0;			// mode for predcition 0~8 in 4 x 4
 const double PI = 3.1415;
-short smallimage[256][256][8][8];	// 全局块
-short dc_left_image[256][256][8][8];
-short dc_top_image[256][256][8][8];
-short dc_image[256][256][8][8];
-short h_image[256][256][8][8];
-short v_image[256][256][8][8];
-short ddl_image[256][256][8][8];
-short ddr_image[256][256][8][8];
-short vr_image[256][256][8][8];
-short hd_image[256][256][8][8];
-short vl_image[256][256][8][8];
-short hu_image[256][256][8][8];
+unsigned char smallimage[256][256][8][8];	// 全局块
+unsigned char dc_left_image[256][256][8][8];
+unsigned char dc_top_image[256][256][8][8];
+unsigned char dc_image[256][256][8][8];
+unsigned char h_image[256][256][8][8];
+unsigned char v_image[256][256][8][8];
+unsigned char ddl_image[256][256][8][8];
+unsigned char ddr_image[256][256][8][8];
+unsigned char vr_image[256][256][8][8];
+unsigned char hd_image[256][256][8][8];
+unsigned char vl_image[256][256][8][8];
+unsigned char hu_image[256][256][8][8];
 //void imagecut(int argc, char *argv[]);
 
 // print a matrix to a file for debugging
