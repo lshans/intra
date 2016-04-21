@@ -24,6 +24,9 @@
     <ClCompile Include="predict264.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="H264_DCT_Quanter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pre.h">

@@ -56,3 +56,5 @@ static void predict_4x4_hu(uint8_t *src);
 	const int t7 = src[7-1*FDEC_STRIDE]; 
 
 void  predict(short **img, double **pre, double **resi, int height, int width);
+void DCTCore4x4(uint8_t block[4][4], uint8_t tblock[4][4]);
+void IDCTCore4x4(uint8_t tblock[4][4], uint8_t block[4][4]);

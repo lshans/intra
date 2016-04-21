@@ -1,6 +1,6 @@
 
 
-void DCTCore4x4(int16_t block[4][4], int16_t tblock[4][4])
+void DCTCore4x4(uint8_t block[4][4], uint8_t tblock[4][4])
 {
 	int16_t i, ii;
 	int16_t tmp[16];
@@ -50,7 +50,7 @@ void DCTCore4x4(int16_t block[4][4], int16_t tblock[4][4])
 	}
 }
 
-void IDCTCore4x4(int16_t tblock[4][4], int16_t block[4][4])
+void IDCTCore4x4(uint8_t tblock[4][4], uint8_t block[4][4])
 {
 	int16_t i, ii;
 	int16_t tmp[16];

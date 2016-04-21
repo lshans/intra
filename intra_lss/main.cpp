@@ -18,6 +18,7 @@
 const int mode = 0;			// mode for predcition 0~8 in 4 x 4
 const double PI = 3.1415;
 unsigned char smallimage[256][256][8][8];	// 全局块
+//unsigned char block_resi[256][256][4][4];
 unsigned char dc_left_image[256][256][8][8];
 unsigned char dc_top_image[256][256][8][8];
 unsigned char dc_image[256][256][8][8];
@@ -140,7 +141,7 @@ void  predict(short **img, double **pre, double **resi, int height, int width)
 			// SW = tb[i-1][j+1];
 			// pre[i-1][j-1] = intra_est(N, W, NW);//利用左上，左面，上面的像素进行帧内预测
 			/*switch (mode){
-			//         case 0: 
+			//case 0: 
 			//		short pre = paramter_4x4_MSE[0][0] * W + paramter_4x4_MSE[1][0] * NW + paramter_4x4_MSE[2][0] * N;
 			//		break;
 			//case 1: 
@@ -669,10 +670,11 @@ int main(int argc, char *argv[])
 	smallwidth = (int)atoi(argv[8]);
 	img_size = height * width;
 	resi_size = height * width;
-	img_in = (unsigned char *)calloc(img_size, sizeof(char));//如果分配成功则返回指向被分配内存的指针，否则返回空指针NULL
+	img_in = (unsigned char *)calloc(img_size, sizeof(short));//如果分配成功则返回指向被分配内存的指针，否则返回空指针NULL
 	assert(img_in);
 	//malloc 向系统申请分配指定size个字节的内存空间。返回类型是 void* 类型。void* 表示未确定类型的指针。
 	//C,C++规定，void* 类型可以强制转换为任何其它类型的指针。返回后强行转换为实际类型的指针。
+
 
 	// 给动态数组分配空间并读入文件
 	img = (short **)calloc(height, sizeof(char *));
@@ -691,29 +693,32 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < height; i++)
 		resi[i] = (double *)calloc(width,sizeof(double));
 
-	DCT = (double **)calloc(height, sizeof(double *));
-	for(int i = 0; i < height; i++)
-		DCT[i] = (double *)calloc(width,sizeof(double));
+	
 
-	TDCT = (double **)calloc(height, sizeof(double *));
+	DCT = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
 	for(int i = 0; i < height; i++)
-		TDCT[i] = (double *)calloc(width,sizeof(double));
+		DCT[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
+
+
+	TDCT = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
+	for(int i = 0; i < height; i++)
+		TDCT[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
 	
-	ODST = (double **)calloc(height, sizeof(double *));
+	ODST = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
 	for(int i = 0; i < height; i++)
-		ODST[i] = (double *)calloc(width,sizeof(double));
+		ODST[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
 	
-	f  = (double **)calloc(height, sizeof(double *));
+	f  = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
 	for(int i = 0; i < height; i++)
-		f[i] = (double *)calloc(width,sizeof(double));
+		f[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
 	
-	F  = (double **)calloc(height, sizeof(double *));
+	F  = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
 	for(int i = 0; i < height; i++)
-		F[i] = (double *)calloc(width,sizeof(double));
+		F[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
 	
-	temp  = (double **)calloc(height, sizeof(double *));
+	temp  = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
 	for(int i = 0; i < height; i++)
-		temp[i] = (double *)calloc(width,sizeof(double));
+		temp[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
 
 	// 输入原始图像文件
 	if((filein = fopen(argv[1],"rb")) == NULL)
@@ -721,7 +726,7 @@ int main(int argc, char *argv[])
 		printf("the file can not open\n");
 		exit(0);
 	}
-	fread(img_in,sizeof(unsigned char),img_size,filein);
+	fread(img_in,sizeof(unsigned char), precision == 8 ? img_size : 2 * img_size, filein);
 	fclose(filein);
 	filein = NULL;
 	printf("打开文件成功\n");
@@ -800,6 +805,8 @@ int main(int argc, char *argv[])
 		for(int j=0;j<width;j++)
 			DCT[i][j]=sqrt(2.000000/width)*Ck*cos((2*j+1)*i*PI/(2*width));	//DCT系数
 	}
+
+
 
 	//求转置
 	Fast(TDCT, DCT, height, width);	
