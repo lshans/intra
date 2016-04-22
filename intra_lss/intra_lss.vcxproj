@@ -13,10 +13,10 @@
   <ItemGroup>
     <ClCompile Include="H264_DCT_Quanter.cpp" />
     <ClCompile Include="predict264.cpp" />
-    <ClCompile Include="imagecut.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="common.h" />
     <ClInclude Include="pre.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

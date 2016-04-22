@@ -241,4 +241,5 @@ void DCT_Quanter(int16_t inputData[4][4], int16_t outputData[4][4])
   for (int r = 0; r < 4; ++r)
 	  for (int c = 0; c < 4; ++c)
 		  outputData[r][c] = d2[r][c];
+  
 }

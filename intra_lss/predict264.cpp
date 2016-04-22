@@ -1,4 +1,9 @@
+#include <stdint.h>
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
 #include "pre.h"
+#include "common.h"
 void DCT_Quanter(int16_t inputData[4][4], int16_t outputData[4][4]);
 
 //#define FDEC_STRIDE 32
@@ -270,7 +275,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		R[i] = 0;
 
 	uint8_t resi_temp[4][4];
-	memset(temp, 0, 4 * 4);
+	memset(resi_temp, 0, 4 * 4);
 	for (int i = 0; i < BLOCKHEIGHT; ++i)
 	{
 		for (int j = 0; j < BLOCKWIDTH; ++j)
@@ -491,13 +496,13 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 }
 
 // 对各个图像块按12种预测模式进行预测，选出最好的一种得到残差,返回全图的残差能量
-short predict(uint8_t image_construct[1025][1029], short resi[1024][1024], int height, int width)
+short predict(short image_construct[1025][1029], short resi[1024][1024], int height, int width)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	int16_t block_resi[4][4] = {0};
 	int16_t outdataDct_Quant[4][4] = {0};
 	int16_t block_construct[4][4] = {0};
-	int16_t resi_energy = 0;
+	int resi_energy = 0;
 	
 
 	for (int i_row = 0; i_row < ROWS; ++i_row)
@@ -534,22 +539,26 @@ short predict(uint8_t image_construct[1025][1029], short resi[1024][1024], int h
 			predict_4x4_ddr((uint8_t *)(&ddr_image[i_row][i_col][1][1]));
 			predict_4x4_vr((uint8_t *)(&vr_image[i_row][i_col][1][1]));
 			predict_4x4_hd((uint8_t *)(&hd_image[i_row][i_col][1][1]));
-			predict_4x4_hl((uint8_t *)(&hl_image[i_row][i_col][1][1]));
+			predict_4x4_vl((uint8_t *)(&vl_image[i_row][i_col][1][1]));
 			predict_4x4_hu((uint8_t *)(&hu_image[i_row][i_col][1][1]));
 
 			//计算对每一种预测模式的预测残差，并比较残差能量，将能量最低的预测模式下的残差保留,返回值为残差能量
-			CalcBestResi(block_resi, i_row, i_col);
+			resi_energy += CalcBestResi(block_resi, i_row, i_col);
 			//将当前块的残差值保存到整幅图像的残差矩阵中
 			for (int i = 0; i < BLOCKHEIGHT; ++i)
 			{
 				for (int j = 0; j < BLOCKWIDTH; ++j)
 				{
 					//  resi[i_row][i_col][i][j] = block_resi[i_row][i_col][i][j];	严重错误！！！！
-					resi[i_row * BLOCKHEIGHT + i][i_col * BLOCKWIDTH + j] = block_resi[i_row][i_col][i][j];
+					resi[i_row * BLOCKHEIGHT + i][i_col * BLOCKWIDTH + j] = block_resi[i][j];
 				}
 			}
 			// 对得到的最优的残差块进行变换、量化、逆量化、逆变换，
-			resi_energy += DCT_Quanter(block_resi, outdataDct_Quant);
+			/**************************************************************
+	         * 3. transform and quant the residual of prediction
+	         *************************************************************/
+	  
+			DCT_Quanter(block_resi, outdataDct_Quant);
 			//DCT_Quanter后的结果与预测值进行相加得到重建块，重建块的值拷贝到image_construct中当前块对应位置处，覆盖掉原始图像，
 			//为下一次循环读取下一个块的邻近重建像素值做准备
 			for (int i = 0; i < BLOCKHEIGHT; ++i)

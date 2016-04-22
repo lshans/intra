@@ -1,10 +1,65 @@
 #include "pre.h"
+
+double **para = NULL;				// 估计的预测参数
+double **pre = NULL;				// 预测后的图像数据
+
+para = (double **)calloc(3,sizeof(double *));
+for(int i = 0; i < 3; i++)
+	para[i] = (double *)calloc(1,sizeof(double));
+
+
+DCT = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
+for(int i = 0; i < height; i++)
+	DCT[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
+
+
+TDCT = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
+for(int i = 0; i < height; i++)
+	TDCT[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
+
+ODST = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
+for(int i = 0; i < height; i++)
+	ODST[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
+
+f  = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
+for(int i = 0; i < height; i++)
+	f[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
+
+F  = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
+for(int i = 0; i < height; i++)
+	F[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
+
+temp  = (double **)calloc(BLOCKHEIGHT - 4, sizeof(double *));
+for(int i = 0; i < height; i++)
+	temp[i] = (double *)calloc(BLOCKWIDTH - 4,sizeof(double));
+
+
 void DCT_Quanter(int16_t inputData[4][4], int16_t outputData[4][4]);
 
 //#define FDEC_STRIDE 32
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
 const int FDEC_STRIDE = 9 * 8;	// 8x8 block
+
+// estimate prediction param
+// img:		input img value
+// return:	 estimated prediction param value
+void estimate(short **img, double **para, int width, int height);
+
+// ?????
+// mat transposition
+// A:		input of 1d array
+// m:		rows
+// n:		cols
+// return:	output
+double  *MatrixInver(double   *A,int   m,int   n);
+
+// ?????
+// calculate determinant of a mat
+// A;		input of 1d array
+// m:		rows
+// n:		cols;
+double  Surplus(double   A[],int   m,int   n);
 
 //inline void PREDICT_4x4_DC(uint8_t *src, short v)    //本函数对4x4块的每行像素赋同样的值
 //{
@@ -491,7 +546,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 }
 
 // 对各个图像块按12种预测模式进行预测，选出最好的一种得到残差,返回全图的残差能量
-short predict(uint8_t image_construct[1025][1029], short resi[1024][1024], int height, int width)
+short predict_LS(uint8_t image_construct[1028][1028], short resi[1024][1024], int height, int width)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	int16_t block_resi[4][4] = {0};
@@ -506,9 +561,9 @@ short predict(uint8_t image_construct[1025][1029], short resi[1024][1024], int h
 		{
 			// 将输入图像读成 5x9 的图像块（边界扩展后），赋值给用来存储每一种预测模式输入图像的数组
 			// 
-			for (int i = 0; i < BLOCKHEIGHT + 1; ++i)
+			for (int i = 0; i < BLOCKHEIGHT + 4; ++i)
 			{
-				for (int j = 0; j < BLOCKWIDTH + 5; ++j)
+				for (int j = 0; j < BLOCKWIDTH + 4; ++j)
 				{
 					smallimage[i_row][i_col][i][j] = image_construct[i_row * BLOCKHEIGHT + i] [i_col * BLOCKWIDTH + j];
 					dc_left_image[i_row][i_col][i][j] = smallimage[i_row][i_col][i][j];
@@ -568,3 +623,451 @@ short predict(uint8_t image_construct[1025][1029], short resi[1024][1024], int h
 	return resi_energy;
 }
 
+// multiply two mat
+// D:		input 1st mat, H1 x K1
+// f:		input 2st mat, K1 x W1
+// temp:	otuput mat, H1 x W1
+void Mult(double **mat1, double **mat2,double **resMat, int H1, int W1, int K1)	//DCT正变换  H1 * K1 | K1 * W1
+{
+	double sum = 0;
+	for(int i = 0; i < H1; i++)
+		for(int j = 0; j < W1; j++)
+		{
+			sum = 0;
+			for(int k = 0;k < K1; k++)
+				sum += mat1[i][k] * mat2[k][j];
+			resMat[i][j] = sum;
+		}
+}
+
+// TO-DO: 修改边界扩展至4行4列，模式3与4采用不同的估计方式
+// img_padding 左边和上边填128，row和col分别从1开始索引img_padding
+//int mode_cal_u(double **img_padding, int row, int col, int mode)
+//{
+//	static double u[2][2];
+//	switch (mode)
+//	{
+//	case 0, 1, 2:
+//		u[0][1] = img_padding[row - 1][col];	// 上边
+//		u[1][0] = img_padding[row][col - 1];	// 左边
+//		u[0][0] = img_padding[row - 1][col - 1];// 左上角
+//		break;
+//	case 3:
+//		u[0][1] = img_padding[row - 1][col];	// 上边
+//		u[1][0] = (img_padding[row][col - 1] + 2 * img_padding[row + 1][col - 1] + img_padding[row + 2][col - 1]) / 4;
+//		u[0][0] = img_padding[row][col - 1];// 左上角
+//		break;
+//	case 4:
+//		u[0][1] = img_padding[row - 1][col];	// 上边
+//		u[1][0] = (img_padding[row - 2][col - 1] + 2 * img_padding[row - 1][col - 1] + img_padding[row][col - 1]) / 4;
+//		u[0][0] = img_padding[row - 2][col - 1];// 左上角
+//		break;	
+//	case 5:
+//		u[0][1] = img_padding[row - 1][col];	// 上边
+//		u[1][0] = (img_padding[row - 1][col - 1] + img_padding[row][col - 1]) / 2;
+//		u[0][0] = (img_padding[row - 2][col - 1] + img_padding[row - 1][col - 1]) / 2;
+//		break;	
+//	case 6:
+//		u[0][1] = (img_padding[row - 1][col] + img_padding[row - 1][col - 1]) / 2;
+//		u[1][0] = img_padding[row][col - 1];
+//		u[0][0] = (img_padding[row - 1][col - 1] + img_padding[row - 1][col - 2]) / 2;
+//		break;	
+//	case 7:
+//		u[0][1] = img_padding[row - 1][col];	// 上边
+//		u[1][0] = (img_padding[row][col - 1] + img_padding[row + 1][col - 1]) / 2;
+//		u[0][0] = (img_padding[row - 1][col - 1] + img_padding[row][col - 1]) / 2;
+//		break;	
+//	case 8:
+//		u[0][1] = (img_padding[row - 1][col + 1] + img_padding[row - 1][col]) / 2;
+//		u[1][0] = img_padding[row][col - 1];
+//		u[0][0] = (img_padding[row - 1][col] + img_padding[row - 1][col - 1]) / 2;
+//
+//		break;	
+//	default:
+//		break;
+//	}
+//	
+//}
+
+
+void AccumulateParaAB(double **paraA, double **paraB, short **matrix_in_offset, int x, int y, int mode)
+{   //需要调整多个块累加的程序。。。。??
+	static double u[2][2];	// u[y][x] equals to u(x, y)
+	switch (mode)
+	{
+	case 0: case 1: case 2:
+		u[1][0] = matrix_in_offset[y][x - 1];
+		u[0][1] = matrix_in_offset[y - 1][x];
+		u[0][0] = matrix_in_offset[y - 1][x - 1];
+		break;
+	case 3:
+		u[1][0] = matrix_in_offset[y][x - 1];
+		u[0][1] = (matrix_in_offset[y - 1][x] + 2 * matrix_in_offset[y - 1][x + 1] + matrix_in_offset[y - 1][x + 2]) / 4;
+		u[0][0] = matrix_in_offset[y - 1][x];
+		break;
+	case 4:
+		u[1][0] = matrix_in_offset[y][x - 1];
+		u[0][1] = (matrix_in_offset[y - 1][x - 2] + 2 * matrix_in_offset[y - 1][x - 1] + matrix_in_offset[y - 1][x]) / 4;
+		u[0][0] = matrix_in_offset[y - 1][x - 2];
+		break;	
+	case 5:
+		u[1][0] = matrix_in_offset[y][x - 1];
+		u[0][1] = (matrix_in_offset[y - 1][x - 1] + matrix_in_offset[y - 1][x]) / 2;
+		u[0][0] = (matrix_in_offset[y - 1][x - 2] + matrix_in_offset[y - 1][x - 1]) / 2;
+		break;	
+	case 6:
+		u[1][0] = (matrix_in_offset[y][x - 1] + matrix_in_offset[y - 1][x - 1]) / 2;
+		u[0][1] = matrix_in_offset[y - 1][x];
+		u[0][0] = (matrix_in_offset[y - 1][x - 1] + matrix_in_offset[y - 2][x - 1]) / 2;
+		break;	
+	case 7:
+		u[1][0] = matrix_in_offset[y][x - 1];
+		u[0][1] = (matrix_in_offset[y - 1][x] + matrix_in_offset[y - 1][x + 1]) / 2;
+		u[0][0] = (matrix_in_offset[y - 1][x - 1] + matrix_in_offset[y - 1][x]) / 2;
+		break;	
+	case 8:
+		u[1][0] = (matrix_in_offset[y + 1][x - 1] + matrix_in_offset[y][x - 1]) / 2;
+		u[0][1] = matrix_in_offset[y - 1][x];
+		u[0][0] = (matrix_in_offset[y][x - 1] + matrix_in_offset[y - 1][x - 1]) / 2;
+		break;	
+	default:
+		break;
+	}
+	u[1][1] = matrix_in_offset[y][x];
+
+	paraA[0][0] += u[1][0] * u[1][0];
+	paraA[0][1] += u[1][0] * u[0][0];
+	paraA[0][2] += u[1][0] * u[0][1];
+	paraA[1][0] += u[0][0] * u[1][0];
+	paraA[1][1] += u[0][0] * u[0][0];
+	paraA[1][2] += u[0][0] * u[0][1];
+	paraA[2][0] += u[0][1] * u[1][0];
+	paraA[2][1] += u[0][1] * u[0][0];
+	paraA[2][2] += u[0][1] * u[0][1];
+
+	paraB[0][0] += u[1][1] * u[1][0];
+	paraB[1][0] += u[1][1] * u[0][0];
+	paraB[2][0] += u[1][1] * u[0][1];
+}
+
+
+/*矩阵转置*/ 
+double *MatrixInver(double A[], int m, int n)   
+{ 
+	double *B = (double *)malloc(m * n * sizeof(double)); 
+
+	for(int i = 0;i <n;i++) 
+		for(int j = 0;j < m;j++) 
+			B[i * m + j] = A[j * n + i];         
+	return B; 
+} 
+/*求矩阵行列式*/
+double Surplus(double A[],int m,int n)   
+{         
+	int   i,j,k,p,r; 
+	double   X,temp=1,temp1=1,s=0,s1=0; 
+
+	if(n==2) 
+	{ 
+		for(i=0;i <m;i++) 
+			for(j=0;j <n;j++) 
+				if((i+j)%2)   temp1*=A[i*n+j]; 
+				else   temp*=A[i*n+j]; 
+				X=temp-temp1; 
+	} 
+	else 
+	{ 
+		for(k=0;k <n;k++) 
+		{ 
+			for(i=0,j=k;i <m,j <n;i++,j++) 
+				temp*=A[i*n+j]; 
+			if(m-i) 
+			{ 
+				for(p=m-i,r=m-1;p> 0;p--,r--) 
+					temp*=A[r*n+p-1]; 
+			} 
+			s+=temp; 
+			temp=1; 
+		} 
+
+		for(k=n-1;k >= 0;k--) 
+		{ 
+			for(i=0,j=k;i <m,j >= 0;i++,j--) 
+				temp1*=A[i*n+j]; 
+			if(m-i) 
+			{for(p=m-1,r=i;r < m;p--,r++) 
+			temp1*=A[r*n+p];} 
+			s1+=temp1; 
+			temp1=1; 
+		}                 
+		X=s-s1; 
+	} 
+	return   X; 
+} 
+
+
+// TO-DO verify whether is correct
+/*矩阵求逆****A为一维数组*/ 
+double *MatrixOpp(double A[],int   m,int   n)  
+{ 
+	double *SP = NULL;
+	double *AB = NULL;
+	double *B = NULL;
+	double X;
+	double *C = NULL; 
+	SP=(double *)malloc(m * n * sizeof(double)); 
+	AB=(double *)malloc(m * n * sizeof(double)); 
+	B = (double *)malloc(m * n * sizeof(double)); 
+
+	X = Surplus(A,m,n); 
+	X = 1.00 / X; 
+
+	for(int i = 0;i < m;i++) 
+		for(int j = 0;j < n;j++) 
+		{ 
+			for(int k = 0;k < m * n; k++) 
+				B[k]=A[k]; 
+
+			{ 
+				for(int x=0;x <n;x++) 
+					B[i*n+x]=0; 
+				for(int y=0;y <m;y++) 
+					B[m*y+j]=0; 
+				B[i*n+j]=1; 
+				SP[i*n+j]=Surplus(B,m,n); 
+				AB[i*n+j]=X*SP[i*n+j]; 
+			} 
+		} 
+		C=MatrixInver(AB, m, n); 
+
+		return   C; 
+} 
+
+void estimate(short **img, double **para, int width, int height)
+{
+	double **paraA = NULL;
+	double **paraB = NULL;
+	double **result = NULL;
+	
+	paraA  = (double **)calloc(3, sizeof(double *));
+	for(int i = 0; i < 3; i++)
+	{
+		paraA[i] = (double *)calloc(3,sizeof(double));
+	}
+
+	result  = (double **)calloc(3, sizeof(double *));
+	for(int i = 0; i < 3; i++)
+	{
+		result[i] = (double *)calloc(3,sizeof(double));
+	}
+
+	paraB  = (double **)calloc(3, sizeof(double *));
+	for(int i = 0; i < 3; i++)
+	{
+		paraB[i] = (double *)calloc(1,sizeof(double));
+	}
+
+	para = (double **)calloc(3,sizeof(double *));
+	for(int i = 0; i < 3; i++)
+	{
+		para[i] = (double *)calloc(1,sizeof(double));
+	}
+	
+	// 扩充原始块，用128填充上下各四行，左右各四列
+	/*short **matrix_in = NULL;
+	matrix_in = (short **)calloc(height + 4,sizeof(short *));
+	for(int i = 0; i < height + 4; i++)
+		matrix_in[i] = (short *)calloc(width + 4,sizeof(short));
+	memset(matrix_in, 128, sizeof(short));
+	short **matrix_in_offset = (short **)&matrix_in[2][2];
+	for (int i = 0; i < height; ++i)
+		for (int j = 0; j < width; ++j)
+			matrix_in_offset[i][j] = img[i][j];*/
+
+	 
+
+	// TO-DO: for_each mode = 0~8;
+	int mode = 0;
+	//判断模式，根据不同模式给左边，左上，上边元素进行赋值，再调用下面的计算公式
+	switch (mode)
+	{
+	case 0: case 1: case 4: case 5: case 6:
+		//0,1,4,5,6模式可以用下面公式计算
+		for(int i = 0; i < height; ++i)
+			for(int j = 0; j < width; ++j)
+				AccumulateParaAB(paraA, paraB, matrix_in_offset, j, i, mode);
+		break;
+	case 3: case 7:
+		//3,7模式可以用下面公式计算
+		for(int i = height - 1; i >= 0; --i)
+			for(int j = width - 1; j >= 0; --j)
+				AccumulateParaAB(paraA, paraB, matrix_in_offset, j, i, mode);
+		break;
+	case 8:
+		//8模式可以用下面公式计算
+		for(int i = height - 1; i >= 0 ; --i)
+			for(int j = 0; j < width; ++j)
+				AccumulateParaAB(paraA, paraB, matrix_in_offset, j, i, mode);
+		break;
+	default:
+		break;
+	}
+
+	for (int i = 0; i < height + 4; ++i)
+		free(matrix_in[i]);
+	free(matrix_in);
+
+
+	// 矩阵求逆l
+	double *res_temp = MatrixOpp((double *)paraA, 3, 3); 
+	
+	for (int i = 0; i < 3; ++i)
+		for (int j = 0; j < 3; ++j)
+			result[i][j] = res_temp[i * 3 + j];
+	//????
+	free(res_temp);
+	{
+		FILE *fout = fopen("res.txt", "w");
+		for (int i = 0; i < 3; ++i)
+		{
+			for (int j = 0; j < 3; ++j)
+				fprintf(fout, "%6.2f, ", result[i][j]);
+			fprintf(fout, "\n");
+		}
+		fclose(fout);
+	}
+
+	//矩阵result 与paraB相乘
+	Mult(result, paraB, para, 3, 1, 3);
+	for (int i = 0; i < 3; ++i)
+	{
+		free(result[i]);
+		free(paraA[i]);
+		free(paraB[i]);
+	}
+	free(result);
+	free(paraA);
+	free(paraB);
+
+
+	
+}
+
+// use estimated prediction param to predict
+// img:		input img value
+// pre:		output of prediction value
+// resi:	output of residual
+void  predict(short **img, double **pre, double **resi, int height, int width)
+{
+	short  N, W, NW;
+	//     short NE, SW;
+	short  **imgConstructed = NULL;
+	double paramter_4x4_ML[4][9] = {
+		{0.42, 0.88, 0.57, 0.31, 0.25, 0.08, 0.71, 0.24, 0.33},
+		{-0.38, -0.42, -0.36, -0.22, 0.50, 0.23, 0.11, 0.27, -0.35},
+		{0.94, 0.51, 0.70, 0.24, 0.36, 0.74, 0.27, 0.74, 0.48},
+		{0, 0, 0, 0.60, 0, 0, 0,0.24, 0.46}
+	};
+	double paramter_4x4_MSE[4][9] = {
+		{0.51, 0.96, 0.65, 0.26, 0.20, -0.09, 0.64, 0.30, 0.31},
+		{-0.49, -0.40, -0.41, -0.10, 0.58, 0.46, 0.33, -0.26, -0.25},
+		{0.97, 0.44, 0.63, 0.05, 0.25, 0.63, 0.07, 0.66, 0.38},
+		{0, 0, 0, 0.76, 0, 0, 0, 0.29, 0.53}
+	};
+
+	
+
+	for(int i = 1; i < height + 1; i++)
+	{
+		for(int j = 1; j < width + 1; j++)
+		{
+			N = tb[i-1][j];
+			W = tb[i][j-1];
+			NW = tb[i-1][j-1];
+			// NE = tb[i+1][j-1];
+			// SW = tb[i-1][j+1];
+			// pre[i-1][j-1] = intra_est(N, W, NW);//利用左上，左面，上面的像素进行帧内预测
+			/*switch (mode){
+			//case 0: 
+			//		short pre = paramter_4x4_MSE[0][0] * W + paramter_4x4_MSE[1][0] * NW + paramter_4x4_MSE[2][0] * N;
+			//		break;
+			//case 1: 
+			//		short pre = paramter_4x4_MSE[0][1] * W + paramter_4x4_MSE[1][1] * NW + paramter_4x4_MSE[2][1] * N;
+			//		break;
+			//case 2: 
+			//		short pre = paramter_4x4_MSE[0][2] * W + paramter_4x4_MSE[1][2] * NW + paramter_4x4_MSE[2][2] * N;
+			//		break;
+			//case 3:  
+			//		NE = tb[i+1][j-1];
+			//		short pre = paramter_4x4_MSE[0][3] * W + paramter_4x4_MSE[1][3] * NW + paramter_4x4_MSE[2][3] * N + paramter_4x4_MSE[3][3] * NE;
+			//		break;
+			//case 4:
+			//		short pre = paramter_4x4_MSE[0][4] * W + paramter_4x4_MSE[1][4] * NW + paramter_4x4_MSE[2][4] * N;
+			//		break;
+			//case 5:
+			//		short pre = paramter_4x4_MSE[0][5] * W + paramter_4x4_MSE[1][5] * NW + paramter_4x4_MSE[2][5] * N;
+			//		break;
+			//case 6:
+			//		short pre = paramter_4x4_MSE[0][6] * W + paramter_4x4_MSE[1][6] * NW + paramter_4x4_MSE[2][6] * N;
+			//		break;
+			//case 7:
+			//		NE = tb[i+1][j-1];
+			//		short pre = paramter_4x4_MSE[0][7] * W + paramter_4x4_MSE[1][7] * NW + paramter_4x4_MSE[2][7] * N + paramter_4x4_MSE[3][7] * NE;
+			//		break;
+			//			  
+			//case 8: 
+			//		SW = tb[i-1][j+1];
+			//		short pre = paramter_4x4_MSE[0][8] * W + paramter_4x4_MSE[1][8] * NW + paramter_4x4_MSE[2][8] * N + paramter_4x4_MSE[3][8] * SW;
+			//		break;
+			//default:
+			//		printf("please input proper mode \n");
+			//		break;
+			//}
+			*/
+			// mode 0
+			pre[i-1][j-1] = paramter_4x4_MSE[0][0] * W + paramter_4x4_MSE[1][0] * NW + paramter_4x4_MSE[2][0] * N;
+
+			// mode 1
+			//short pre = paramter_4x4_MSE[0][1] * W + paramter_4x4_MSE[1][1] * NW + paramter_4x4_MSE[2][1] * N;
+
+			// mode 2
+			//short pre = paramter_4x4_MSE[0][2] * W + paramter_4x4_MSE[1][2] * NW + paramter_4x4_MSE[2][2] * N;
+			//
+			// mode 3
+			//NE = tb[i+1][j-1];
+			//short pre = paramter_4x4_MSE[0][3] * W + paramter_4x4_MSE[1][3] * NW + paramter_4x4_MSE[2][3] * N + paramter_4x4_MSE[3][3] * NE;
+			//
+			// mode 4
+			//short pre = paramter_4x4_MSE[0][4] * W + paramter_4x4_MSE[1][4] * NW + paramter_4x4_MSE[2][4] * N;
+			//
+			// mode 5
+			//short pre = paramter_4x4_MSE[0][5] * W + paramter_4x4_MSE[1][5] * NW + paramter_4x4_MSE[2][5] * N;
+			//
+			// mode 6
+			//short pre = paramter_4x4_MSE[0][6] * W + paramter_4x4_MSE[1][6] * NW + paramter_4x4_MSE[2][6] * N;
+			//
+			// mode 7
+			//NE = tb[i+1][j-1];
+			//short pre = paramter_4x4_MSE[0][7] * W + paramter_4x4_MSE[1][7] * NW + paramter_4x4_MSE[2][7] * N + paramter_4x4_MSE[3][7] * NE;
+
+			// mode 8
+			//SW = tb[i-1][j+1];
+			//short pre = paramter_4x4_MSE[0][8] * W + paramter_4x4_MSE[1][8] * NW + paramter_4x4_MSE[2][8] * N + paramter_4x4_MSE[3][8] * SW;
+
+
+			resi[i-1][j-1] = tb[i][j] - pre[i-1][j-1];//预测残差
+		}
+	}
+}
+
+/**************************************************************
+	 * 1. estimate prediction param of 9 modes for block of 4 x 4 and 4 modes for block of 16 x 16
+	 *    by Markov prediction method
+	 *************************************************************/
+	//估计用于预测的邻近像素权值
+	//estimate(img, para, width, height);
+
+	/**************************************************************
+	 * 2. use estimated prediction param to predict
+	 *************************************************************/
+	//predict(img, pre, resi, height, width);
