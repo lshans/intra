@@ -17,19 +17,18 @@
 
 const int mode = 0;			// mode for predcition 0~8 in 4 x 4
 const double PI = 3.1415;
-unsigned char smallimage[256][256][8][8];	// 全局块
-//unsigned char block_resi[256][256][4][4];
-unsigned char dc_left_image[256][256][8][8];
-unsigned char dc_top_image[256][256][8][8];
-unsigned char dc_image[256][256][8][8];
-unsigned char h_image[256][256][8][8];
-unsigned char v_image[256][256][8][8];
-unsigned char ddl_image[256][256][8][8];
-unsigned char ddr_image[256][256][8][8];
-unsigned char vr_image[256][256][8][8];
-unsigned char hd_image[256][256][8][8];
-unsigned char vl_image[256][256][8][8];
-unsigned char hu_image[256][256][8][8];
+unsigned char smallimage[256][256][5][9];	// 全局块
+unsigned char dc_left_image[256][256][5][9]];
+unsigned char dc_top_image[256][256][5][9];
+unsigned char dc_image[256][256][5][9];
+unsigned char h_image[256][256][5][9];
+unsigned char v_image[256][256][5][9];
+unsigned char ddl_image[256][256][5][9];
+unsigned char ddr_image[256][256][5][9];
+unsigned char vr_image[256][256][5][9];
+unsigned char hd_image[256][256][5][9];
+unsigned char vl_image[256][256][5][9];
+unsigned char hu_image[256][256][5][9];
 //void imagecut(int argc, char *argv[]);
 
 // print a matrix to a file for debugging
@@ -96,7 +95,7 @@ void  predict(short **img, double **pre, double **resi, int height, int width)
 {
 	short  N, W, NW;
 	//     short NE, SW;
-	short  **tb = NULL;
+	short  **imgConstructed = NULL;
 	double paramter_4x4_ML[4][9] = {
 		{0.42, 0.88, 0.57, 0.31, 0.25, 0.08, 0.71, 0.24, 0.33},
 		{-0.38, -0.42, -0.36, -0.22, 0.50, 0.23, 0.11, 0.27, -0.35},
@@ -110,25 +109,24 @@ void  predict(short **img, double **pre, double **resi, int height, int width)
 		{0, 0, 0, 0.76, 0, 0, 0, 0.29, 0.53}
 	};
 
-	tb = (short **)calloc(height + 1,sizeof(short *));//新建数组，开辟空间，多开辟出一行一列存储上边和左边的邻近像素
+	//新建数组，开辟空间，多开辟出1行5列存储上下左右的邻近像素
+	//imgConstructed = (short **)calloc(height + 1,sizeof(short *));
+	//for(int j = 0; j < height + 1; j++)
+	//{
+	//	imgConstructed[j] = (short *)calloc(width + 5,sizeof(short));
+	//}
+	//for(int r = 0; r < height + 1; r++)    //将输入图像值赋值给数组
+	//{
+	//	for(int c = 0; c < width + 5; c++)
+	//	{
+	//		if(r < 1 || c < 1 || c > 1 + width)
+	//			imgConstructed[r][c] = 128;
+	//		else
+	//			imgConstructed[r][c] = img[r - 1][c - 1];
+	//	}
+	//}
+	//
 
-	for(int j = 0; j < height + 1; j++)
-	{
-		tb[j] = (short *)calloc(width + 1,sizeof(short));
-	}
-
-	for(int i = 0; i < height + 1; i++)    //将输入图像值赋值给数组
-	{
-		for(int j = 0; j < width + 1; j++)
-		{
-			if((i == 0) || (j == 0))
-			{
-				tb[i][j] = 128;
-			}
-			else
-				tb[i][j] = img[i-1][j-1];
-		}
-	}
 
 	for(int i = 1; i < height + 1; i++)
 	{
@@ -587,11 +585,10 @@ int main(int argc, char *argv[])
 	int  precision;						// 原图比特精度，一般8bit
 	unsigned char *img_in = NULL;		// 原始图像的输入
 	short **img = NULL;					// 原始图像大小端转换后的数据
-	//int  row = 128;                       // 将图像分成小块，每一行的图像块数目
-	//int  col = 128;                       // 将图像分成小块，每一列的图像块数目
 	
-	//int  smallheight = 4;               // 小图的行数
-	//int  smallwidth  = 4;               // 小图的列数
+	short imgConstructed[1024 + 1][1024 + 5] = {0}; //用于更新原图相应块位置的重建值
+	short resi[1024][1024] = {0};        //存储整幅图的残差数据
+	int16_t total_resi_energy = 0;                  //原始大图的预测残差能量
 	
 	double **para = NULL;				// 估计的预测参数
 	double **pre = NULL;				// 预测后的图像数据
@@ -685,13 +682,13 @@ int main(int argc, char *argv[])
 	for(int i = 0; i < 3; i++)
 		para[i] = (double *)calloc(1,sizeof(double));
 
-	pre = (double **)calloc(height, sizeof(double *));
-	for(int i = 0; i < height; i++)
-		pre[i] = (double *)calloc(width,sizeof(double));
+	//pre = (double **)calloc(height, sizeof(double *));
+	//for(int i = 0; i < height; i++)
+	//	pre[i] = (double *)calloc(width,sizeof(double));
 
-	resi = (double **)calloc(height, sizeof(double *));
-	for(int i = 0; i < height; i++)
-		resi[i] = (double *)calloc(width,sizeof(double));
+	//resi = (double **)calloc(height, sizeof(double *));
+	//for(int i = 0; i < height; i++)
+	//	resi[i] = (double *)calloc(width,sizeof(double));
 
 	
 
@@ -736,30 +733,25 @@ int main(int argc, char *argv[])
 	//	printf("oppenning error fileout\n");
 	//	exit(0);
 	//}
+
+	
 	//image cut 
 	//char cutpara[9][100] = {"", "03.raw", "1024", "1024", "8", "256", "256", "4", "4"};
 	
 	//imagecut(9, (char **)cutpara);
 
-	
-
-
 	// 大小端格式转换
 	transformat(img, img_in, height, width, endian, precision);
 
-	// 将图像分成小块，每一个图像块的行坐标为i_row ，每一个图像块的列坐标i_col
-	for (int i_row = 0; i_row < row; ++i_row)
+	//将输入图像值赋值给数组
+	for(int r = 0; r < height + 1; r++)    
 	{
-		for (int i_col = 0; i_col < col; ++i_col)
+		for(int c = 0; c < width + 5; c++)
 		{
-			for (int i = 0; i < smallheight; ++i)
-			{
-				for (int j = 0; j < smallwidth; ++j)
-				{
-					smallimage[i_row][i_col][i][j] = img[i_row * smallheight + i][i_col * smallwidth + j];
-
-				}
-			}	
+			if(r < 1 || c < 1 || c > 1 + width)
+				imgConstructed[r][c] = 128;
+			else
+				imgConstructed[r][c] = img[r - 1][c - 1];
 		}
 	}
 	/**************************************************************
@@ -773,6 +765,7 @@ int main(int argc, char *argv[])
 	 * 2. use estimated prediction param to predict
 	 *************************************************************/
 	//predict(img, pre, resi, height, width);
+	total_resi_energy = predict(image_construct[1025][1029], resi[1024][1024], height, width);
 
 	// 打印残差矩阵进行调试
 	FILE *fout = fopen("output.txt", "w");
