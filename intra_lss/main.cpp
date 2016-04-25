@@ -117,6 +117,7 @@ int main(int argc, char *argv[])
 	
 	short img264Constructed[1024 + 1][1024 + 5] = {0}; //重建图像数组，利用264方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
 	short resi264[1024][1024] = {0};                   //存储264预测后整幅图的残差数据
+	short pre264[1024][1024] = {0};                    //存储264预测后的预测数据
 	int16_t H264resi_energy = 0;                       //原始大图的预测残差能量
 
 	//short imgLSConstructed[1024 + 4][1024 + 4] = {0}; //利用LS方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
@@ -228,12 +229,7 @@ int main(int argc, char *argv[])
 	fclose(filein);
 	filein = NULL;
 	printf("打开文件成功\n");
-	// 完成编码，打开输出码流文件进行回写
-	if((fileout = fopen(argv[2],"wb")) == NULL)
-	{
-		printf("oppenning error fileout\n");
-		exit(0);
-	}
+	
 
 	
 	//image cut 
@@ -256,6 +252,34 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// 打印初始重建图矩阵进行调试
+	FILE *fout = fopen("initConstruct.txt", "w");
+	assert(fout);
+	for (int i = 1; i < height + 1; ++i)
+	{
+		for (int j = 1; j < width + 1; ++j)
+		{
+			fprintf(fout, "%4d", img264Constructed[i][j]);
+		}
+		fprintf(fout, "\n");
+	}
+	fclose(fout);
+	// 打印原图矩阵与初始重建值矩阵进行比较进行调试
+	if((fout = fopen("lena1024.txt", "w")) == NULL)
+	{
+		printf("oppenning error output_text\n");
+		exit(0);
+	}
+	for (int i = 0; i < height; ++i)
+	{
+		for (int j = 0; j < width; ++j)
+		{
+			fprintf(fout, "%4d", img[i][j]);
+		}
+		fprintf(fout, "\n");
+	}
+	fclose(fout);
+
 	//将输入图像值赋值给img264Constructed  重建图像数组
 	//for(int r = 0; r < height + 4; r++)    
 	//{
@@ -268,35 +292,74 @@ int main(int argc, char *argv[])
 	//	}
 	//}
 	
-	H264resi_energy = predict(img264Constructed, resi264, height, width);
+	H264resi_energy = predict(img264Constructed, resi264, pre264, height, width);
+	printf("%4d\n", H264resi_energy);
 	//LS_resi_energy = predict_LS(imgLSConstructed[1028][1028],LS_resi[1024][1024],  );
 
 	// 打印残差矩阵进行调试
-	FILE *fout = fopen("output.txt", "w");
-	assert(fout);
+	
+	if((fout = fopen("resi.txt", "w")) == NULL)
+	{
+		printf("oppenning error output_text\n");
+		exit(0);
+	}
 	for (int i = 0; i < height; ++i)
 	{
 		for (int j = 0; j < width; ++j)
 		{
-			fprintf(fout, "%6.2lf  ", resi264[i][j]);
+			fprintf(fout, "%4d", resi264[i][j]);
 		}
 		fprintf(fout, "\n");
 	}
 	fclose(fout);
 
+	// 完成编码，打开输出码流文件进行回写
+	if((fileout = fopen(argv[2],"wb")) == NULL)
+	{
+		printf("oppenning error fileout\n");
+		exit(0);
+	}
+	fwrite(img264Constructed, sizeof(short), 1025 * 1029, fileout);
+	fclose(fileout);
+
+	//// 转换成8bit
+	unsigned char **pRes = new unsigned char*[1025];
+	for (int i = 0; i < 1025; ++i)
+		pRes[i] = new unsigned char[1029];
+
+	for (int r = 0; r < 1025; ++r)
+		for (int c = 0; c < 1029; ++c)
+			pRes[r][c] = static_cast<unsigned char>(img264Constructed[r][c]);
+	fileout = fopen("img264Constructed_8bit.raw", "wb");
+	if (fileout == NULL)
+	{
+		printf("openning error fileout\n");
+		exit(0);
+	}
+	for (int r = 1; r < 1025; ++r)
+		fwrite(pRes[r] + 1, sizeof(unsigned char), 1024, fileout);
+	fclose(fileout);
+	for (int i = 0; i < 1025; ++i)
+		delete [] pRes[i];
+	delete [] pRes;
+	pRes = NULL;
+	////
+	//打印最终的重建图像
+	if((fileout = fopen("out_img264Constructed.txt", "w")) == NULL)
+	{
+		printf("oppenning error output_text\n");
+		exit(0);
+	}
 	for(int r = 1; r < height + 1; ++r)
 	{
 		for(int c = 1; c < width + 1; ++c)
-		{
-			fprintf(fileout,"%d,",img264Constructed[r][c]);
-		}
+			fprintf(fileout, "%4d", img264Constructed[r][c]);
+		fprintf(fileout, "\n");
 	}
-	 
+	fclose(fileout);
+	
 
 	printf("预测成功\n");
-
-
-	
 
 
 	
@@ -310,17 +373,17 @@ int main(int argc, char *argv[])
 		free(img[i]);  
 	free(img);
 
-	free(resi);
-	resi = NULL;
+	//free(resi);
+	//resi = NULL;
 
 	free(img_in);
 	img_in = NULL;
 
-	fclose(filein);
+	//fclose(filein);
 	filein = NULL;
 
-	/*fclose(fileout);
-	fileout = NULL;*/
+	fclose(fileout);
+	fileout = NULL;
 
 	// 动态分配的内存的释放，二维动态数组的参数
 

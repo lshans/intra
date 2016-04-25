@@ -7,8 +7,8 @@ typedef unsigned char uint8_t;
 
 const int BLOCKWIDTH = 4;		// 小图的宽度
 const int BLOCKHEIGHT = 4;		// 小图的高度
-const int ROWS = 128;	// 将图像分成小块，每一行的图像块数目
-const int COLS = 128;	// 将图像分成小块，每一列的图像块数目
+const int ROWS = 256;	// 将图像分成小块，每一行的图像块数目
+const int COLS = 256;	// 将图像分成小块，每一列的图像块数目
 static void predict_4x4_dc_128(uint8_t *src);
 static void predict_4x4_dc_left(uint8_t *src);
 static void predict_4x4_dc_top(uint8_t *src);
@@ -53,7 +53,7 @@ static void predict_4x4_hu(uint8_t *src);
 	const int t6 = src[6-1*FDEC_STRIDE];\
 	const int t7 = src[7-1*FDEC_STRIDE]; 
 
-short predict(short image_construct[1025][1029], short resi[1024][1024], int height, int width);
+short predict(short image_construct[1025][1029], short resi[1024][1024], short predicted[1024][1024], int height, int width);
 void DCTCore4x4(uint8_t block[4][4], uint8_t tblock[4][4]);
 void IDCTCore4x4(uint8_t tblock[4][4], uint8_t block[4][4]);
 

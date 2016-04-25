@@ -82,7 +82,7 @@ static void predict_4x4_h(uint8_t *src)
 	*(uint32_t *) &src[3 * FDEC_STRIDE] = src[3 * FDEC_STRIDE] * 0x01010101;
 }
 
-// 本函数用每列上边的像素对列进行覆盖
+// 本函数用每列上边的像素对列进行覆盖???????????
 static void predict_4x4_v(uint8_t *src)    
 {
 	uint32_t top = *((uint32_t *) &src[-FDEC_STRIDE]);//取出当前块上方4个像素点的值
@@ -268,7 +268,7 @@ static void predict_4x4_hu(uint8_t *src)
 	src[3*FDEC_STRIDE+3]= l3;                              //---k=l=m=n=o=p=L
 }
 
-int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
+int CalcBestResi(int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, int i_col)
 {
 	unsigned int R[11];
 	for (int i = 0; i < 10; ++i)
@@ -384,6 +384,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = dc_left_image[i_row][i_col][i + 1][j + 1];
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - dc_left_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -394,6 +395,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = dc_top_image[i_row][i_col][i + 1][j + 1];
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - dc_top_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -404,6 +406,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = dc_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - dc_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -414,6 +417,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = h_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - h_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -424,6 +428,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = v_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - v_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -434,6 +439,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = ddl_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - ddl_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -444,6 +450,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = ddr_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - ddr_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -454,6 +461,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = vr_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - vr_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -464,6 +472,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = hd_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - hd_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -474,6 +483,7 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = vl_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - vl_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
 		}
@@ -484,24 +494,27 @@ int CalcBestResi(int16_t block_resi[4][4], int i_row, int i_col)
 		{
 			for (int j = 0; j < BLOCKWIDTH; ++j)
 			{
+				block_pre[i][j] = hu_image[i_row][i_col][i + 1][j + 1];				
 				block_resi[i][j] = smallimage[i_row][i_col][i + 1][j + 1] - hu_image[i_row][i_col][i + 1][j + 1];//预测残差
 			}
-		}\
+		}
 		break;
 	default:
 		break;
 	}
 	return minRes;
 
+
 }
 
 // 对各个图像块按12种预测模式进行预测，选出最好的一种得到残差,返回全图的残差能量
-short predict(short image_construct[1025][1029], short resi[1024][1024], int height, int width)
+short predict(short image_construct[1025][1029], short resi[1024][1024], short predicted[1024][1024], int height, int width)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	int16_t block_resi[4][4] = {0};
 	int16_t outdataDct_Quant[4][4] = {0};
 	int16_t block_construct[4][4] = {0};
+	int16_t block_pre[4][4] = {0};
 	int resi_energy = 0;
 	
 
@@ -543,7 +556,16 @@ short predict(short image_construct[1025][1029], short resi[1024][1024], int hei
 			predict_4x4_hu((uint8_t *)(&hu_image[i_row][i_col][1][1]));
 
 			//计算对每一种预测模式的预测残差，并比较残差能量，将能量最低的预测模式下的残差保留,返回值为残差能量
-			resi_energy += CalcBestResi(block_resi, i_row, i_col);
+			resi_energy += CalcBestResi(block_resi, block_pre, i_row, i_col);
+			//将当前块的预测值保存到整幅图像的预测矩阵中
+			for (int i = 0; i < BLOCKHEIGHT; ++i)
+			{
+				for (int j = 0; j < BLOCKWIDTH; ++j)
+				{
+					//  resi[i_row][i_col][i][j] = block_resi[i_row][i_col][i][j];	严重错误！！！！
+					predicted[i_row * BLOCKHEIGHT + i][i_col * BLOCKWIDTH + j] = block_pre[i][j];
+				}
+			}
 			//将当前块的残差值保存到整幅图像的残差矩阵中
 			for (int i = 0; i < BLOCKHEIGHT; ++i)
 			{
@@ -567,7 +589,7 @@ short predict(short image_construct[1025][1029], short resi[1024][1024], int hei
 				{
 					//block_construct[i_row][i_col][i][j] = block_resi[i_row][i_col][i][j] + outdataDct_Quant[i_row][i_col][i][j];
 					//image_construct[i_row][i_col][i + 1][j + 1] = block_construct[i_row][i_col][i][j]; 严重错误！！中间状态不需要索引块坐标，只需要它的值
-					block_construct[i][j] = block_resi[i][j] + outdataDct_Quant[i][j];
+					block_construct[i][j] = block_pre[i][j] + outdataDct_Quant[i][j];
 					image_construct[i_row * BLOCKHEIGHT + i][i_col * BLOCKWIDTH + j] = block_construct[i][j];
 
 				}
