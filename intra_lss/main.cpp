@@ -6,6 +6,7 @@
 #include <cstdint>
 #include "pre.h"
 #include "common.h"
+using namespace std;
 /********************************************************************************************
  * date: 2016.3 by lss
  * description: prediction, transformation and encoding for single frame picture.
@@ -106,6 +107,7 @@ void transformat(short **img, unsigned char *img_in,  int height, int width, int
 
 int main(int argc, char *argv[])
 {
+	freopen("engery.txt", "w", stdout);
 	FILE *filein = NULL;				// 输入原图
 	FILE *fileout = NULL;				// 输出编码后的图像
 	int  height;						// 原图高
@@ -118,7 +120,7 @@ int main(int argc, char *argv[])
 	short img264Constructed[1024 + 1][1024 + 5] = {0}; //重建图像数组，利用264方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
 	short resi264[1024][1024] = {0};                   //存储264预测后整幅图的残差数据
 	short pre264[1024][1024] = {0};                    //存储264预测后的预测数据
-	int16_t H264resi_energy = 0;                       //原始大图的预测残差能量
+	long long H264resi_energy = 0;                       //原始大图的预测残差能量
 
 	//short imgLSConstructed[1024 + 4][1024 + 4] = {0}; //利用LS方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
 	//short LS_resi[1024][1024] = {0};                  //存储LS方法预测后得到的整幅图的残差数据
@@ -246,11 +248,25 @@ int main(int argc, char *argv[])
 		for(int c = 0; c < width + 5; c++)
 		{
 			if(r < 1 || c < 1 || c > 1 + width)
-				img264Constructed[r][c] = 128;
+				img264Constructed[r][c] = 128;    
 			else
 				img264Constructed[r][c] = img[r - 1][c - 1];
 		}
 	}
+
+	//// 第一行
+	//for (int c = 0; c < width + 5; ++c)
+	//	img264Constructed[0][c] = img264Constructed[1][c];
+
+	//// 第一列
+	//for (int r = 0; r < width + 1; ++r)
+	//	img264Constructed[r][0] = img264Constructed[r][1];
+
+	//// 右边的四列
+	//for (int r = 0; r < height + 1; ++r)
+	//	for (int c = width + 1; c < width + 5; ++c)
+	//		img264Constructed[r][c] = img264Constructed[r][width];
+
 
 	// 打印初始重建图矩阵进行调试
 	FILE *fout = fopen("initConstruct.txt", "w");
@@ -293,7 +309,9 @@ int main(int argc, char *argv[])
 	//}
 	
 	H264resi_energy = predict(img264Constructed, resi264, pre264, height, width);
-	printf("%4d\n", H264resi_energy);
+	cout << "Total energy: " << H264resi_energy << endl;
+	//printf("%32lld\n", H264resi_energy);
+	printf("%I64d\n", H264resi_energy);
 	//LS_resi_energy = predict_LS(imgLSConstructed[1028][1028],LS_resi[1024][1024],  );
 
 	// 打印残差矩阵进行调试

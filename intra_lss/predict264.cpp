@@ -2,14 +2,17 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <iostream>
 #include "pre.h"
 #include "common.h"
+using namespace std;
+//对图像块进行变换量化、逆变换逆量化
 void DCT_Quanter(int16_t inputData[4][4], int16_t outputData[4][4]);
 
 //#define FDEC_STRIDE 32
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
-const int FDEC_STRIDE = 9 * 8;	// 8x8 block
+const int FDEC_STRIDE = 9;	// 8x8 block
 
 //inline void PREDICT_4x4_DC(uint8_t *src, short v)    //本函数对4x4块的每行像素赋同样的值
 //{
@@ -268,14 +271,14 @@ static void predict_4x4_hu(uint8_t *src)
 	src[3*FDEC_STRIDE+3]= l3;                              //---k=l=m=n=o=p=L
 }
 
-int CalcBestResi(int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, int i_col)
+long long CalcBestResi(int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, int i_col)
 {
-	unsigned int R[11];
-	for (int i = 0; i < 10; ++i)
+	int R[11];
+	for (int i = 0; i < 11; ++i)
 		R[i] = 0;
 
-	uint8_t resi_temp[4][4];
-	memset(resi_temp, 0, 4 * 4);
+	int resi_temp[4][4];
+	memset(resi_temp, 0, sizeof(resi_temp));
 	for (int i = 0; i < BLOCKHEIGHT; ++i)
 	{
 		for (int j = 0; j < BLOCKWIDTH; ++j)
@@ -366,7 +369,6 @@ int CalcBestResi(int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, i
 			R[10] += resi_temp[i][j] * resi_temp[i][j];
 		}
 	}
-
 	int modeMinRes = 0;
 	int minRes = R[modeMinRes];
 	for (int i = 0; i < 11; ++i)
@@ -377,6 +379,10 @@ int CalcBestResi(int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, i
 			minRes = R[i];
 		}
 	}
+	printf("BLOCK [%4d][%4d] %d\n",i_row, i_col, minRes);
+	cout << minRes << endl;
+
+
 	switch (modeMinRes)
 	{
 	case 0:
@@ -508,15 +514,14 @@ int CalcBestResi(int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, i
 }
 
 // 对各个图像块按12种预测模式进行预测，选出最好的一种得到残差,返回全图的残差能量
-short predict(short image_construct[1025][1029], short resi[1024][1024], short predicted[1024][1024], int height, int width)
+long long predict(short image_construct[1025][1029], short resi[1024][1024], short predicted[1024][1024], int height, int width)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
-	int16_t block_resi[4][4] = {0};
-	int16_t outdataDct_Quant[4][4] = {0};
-	int16_t block_construct[4][4] = {0};
-	int16_t block_pre[4][4] = {0};
-	int resi_energy = 0;
-	
+	int16_t block_resi[4][4] = {0};          	   //每一个小块的残差值
+	int16_t outdataDct_Quant[4][4] = {0};		  //每一个小块的变换量化后的值
+	int16_t block_construct[4][4] = {0};		 //每一个小块的重建值
+	int16_t block_pre[4][4] = {0};				 //每一个小块的预测值
+	long long resi_energy = 0;					 //每一个小块的残差能量值 
 
 	for (int i_row = 0; i_row < ROWS; ++i_row)
 	{
@@ -556,7 +561,10 @@ short predict(short image_construct[1025][1029], short resi[1024][1024], short p
 			predict_4x4_hu((uint8_t *)(&hu_image[i_row][i_col][1][1]));
 
 			//计算对每一种预测模式的预测残差，并比较残差能量，将能量最低的预测模式下的残差保留,返回值为残差能量
-			resi_energy += CalcBestResi(block_resi, block_pre, i_row, i_col);
+			long long energy_temp = CalcBestResi(block_resi, block_pre, i_row, i_col);
+			resi_energy += energy_temp;
+			
+			printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, resi_energy);
 			//将当前块的预测值保存到整幅图像的预测矩阵中
 			for (int i = 0; i < BLOCKHEIGHT; ++i)
 			{
