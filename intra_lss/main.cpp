@@ -17,21 +17,28 @@ using namespace std;
  * 4. quantization and entropy encoding
  *********************************************************************************************/
 
-const int mode = 0;			// mode for predcition 0~8 in 4 x 4
 const double PI = 3.1415;
-unsigned char smallimage[256][256][5][9];	    // 全局块
-unsigned char dc_left_image[256][256][5][9];
-unsigned char dc_top_image[256][256][5][9];
-unsigned char dc_image[256][256][5][9];
-unsigned char h_image[256][256][5][9];
-unsigned char v_image[256][256][5][9];
-unsigned char ddl_image[256][256][5][9];
-unsigned char ddr_image[256][256][5][9];
-unsigned char vr_image[256][256][5][9];
-unsigned char hd_image[256][256][5][9];
-unsigned char vl_image[256][256][5][9];
-unsigned char hu_image[256][256][5][9];
-//void imagecut(int argc, char *argv[]);
+short block_012pre[4][4] = {0};				 //每一个小块的预测值
+short block_pre3[4][4] = {0};				 //每一个小块的预测值
+short block_pre4[4][4] = {0};				 //每一个小块的预测值
+short block_pre5[4][4] = {0};				 //每一个小块的预测值
+short block_pre6[4][4] = {0};				 //每一个小块的预测值
+short block_pre7[4][4] = {0};				 //每一个小块的预测值
+short block_pre8[4][4] = {0};				 //每一个小块的预测值
+int count[9] = {0};
+
+//short dc_left_image[256][256][8][8];    // 全局块
+//short dc_top_image[256][256][8][8];
+//short dc_image[256][256][8][8];
+//short h_image[256][256][8][8];
+//short v_image[256][256][8][8];
+//short ddl_image[256][256][8][8];
+//short ddr_image[256][256][8][8];
+//short vr_image[256][256][8][8];
+//short hd_image[256][256][8][8];
+//short vl_image[256][256][8][8];
+
+//void imagecutextern short hu_image[256][256][8][8];(int argc, char *argv[]);
 
 // print a matrix to a file for debugging
 int print_matrix_to_file(double **mat, int rows, int cols, const char *filename)
@@ -64,9 +71,9 @@ int print_matrix_to_file(short **mat, int rows, int cols, const char *filename)
 // format transformation for input img file to little endian
 // img:		output
 // img_in:	origin img
-void transformat(short **img, unsigned char *img_in, int height, int width, int endian, int precision);
+void transfer_end(short **img, unsigned char *img_in, int height, int width, int endian, int precision);
 
-void transformat(short **img, unsigned char *img_in,  int height, int width, int endian, int precision)
+void transfer_end(short **img, unsigned char *img_in,  int height, int width, int endian, int precision)
 {
 	if(precision <= 8)
 	{
@@ -117,10 +124,17 @@ int main(int argc, char *argv[])
 	unsigned char *img_in = NULL;		// 原始图像的输入
 	short **img = NULL;					// 原始图像大小端转换后的数据
 	
-	short img264Constructed[1024 + 1][1024 + 5] = {0}; //重建图像数组，利用264方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
-	short resi264[1024][1024] = {0};                   //存储264预测后整幅图的残差数据
-	short pre264[1024][1024] = {0};                    //存储264预测后的预测数据
-	long long H264resi_energy = 0;                       //原始大图的预测残差能量
+	//short img264Constructed[1024 + 1][1024 + 5] = {0}; //重建图像数组，利用264方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
+	//short resi264[1024][1024] = {0};                   //存储264预测后整幅图的残差数据
+	//short pre264[1024][1024] = {0};                    //存储264预测后的预测数据
+	//long long H264resi_energy = 0;                       //原始大图的预测残差能量
+
+	short **imgLSConstructed = NULL; //利用LS方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
+	short **LS_resi = NULL;         //存储LS方法预测后得到的整幅图的残差数据
+	short **preLS = NULL;           //原始大图的预测值
+	long long LS_resi_energy = 0;       //原始大图的预测残差能量
+	short pixAverage = 0;              //像素的平均值
+	long long pixSum = 0;              //像素的总和
 
 	//short imgLSConstructed[1024 + 4][1024 + 4] = {0}; //利用LS方法得到原图相应块位置的重建值，存储利用重建值更新原图后的整幅图数据
 	//short LS_resi[1024][1024] = {0};                  //存储LS方法预测后得到的整幅图的残差数据
@@ -213,13 +227,17 @@ int main(int argc, char *argv[])
 		img[i] = (short *)calloc(width,sizeof(short));
 
 	
-	//pre = (double **)calloc(height, sizeof(double *));
-	//for(int i = 0; i < height; i++)
-	//	pre[i] = (double *)calloc(width,sizeof(double));
+	imgLSConstructed = (short **)calloc(height + 4, sizeof(short *));
+	for(int i = 0; i < height + 4; i++)
+		imgLSConstructed[i] = (short *)calloc(width + 4,sizeof(short));
 
-	//resi = (double **)calloc(height, sizeof(double *));
-	//for(int i = 0; i < height; i++)
-	//	resi[i] = (double *)calloc(width,sizeof(double));
+	LS_resi = (short **)calloc(height, sizeof(short *));
+	for(int i = 0; i < height; i++)
+		LS_resi[i] = (short *)calloc(width,sizeof(short));
+
+	preLS = (short **)calloc(height, sizeof(short *));
+	for(int i = 0; i < height; i++)
+		preLS[i] = (short *)calloc(width,sizeof(short));
 
 	// 输入原始图像文件
 	if((filein = fopen(argv[1],"rb")) == NULL)
@@ -240,42 +258,28 @@ int main(int argc, char *argv[])
 	//imagecut(9, (char **)cutpara);
 
 	// 大小端格式转换
-	transformat(img, img_in, height, width, endian, precision);
-
-	//将输入图像值赋值给img264Constructed  重建图像数组
-	for(int r = 0; r < height + 1; r++)    
+	transfer_end(img, img_in, height, width, endian, precision);
+	printf("转换文件成功\n");
+	//将输入图像值赋值给imgLSConstructed  重建图像数组
+	for(int r = 0; r < height + 4; r++)    
 	{
-		for(int c = 0; c < width + 5; c++)
+		for(int c = 0; c < width + 4; c++)
 		{
-			if(r < 1 || c < 1 || c > 1 + width)
-				img264Constructed[r][c] = 128;    
+			if(r < 2 || r > height + 1 || c < 2 || c > 1 + width)
+				imgLSConstructed[r][c] = 128;
 			else
-				img264Constructed[r][c] = img[r - 1][c - 1];
+				imgLSConstructed[r][c] = img[r - 2][c - 2];
 		}
 	}
-
-	//// 第一行
-	//for (int c = 0; c < width + 5; ++c)
-	//	img264Constructed[0][c] = img264Constructed[1][c];
-
-	//// 第一列
-	//for (int r = 0; r < width + 1; ++r)
-	//	img264Constructed[r][0] = img264Constructed[r][1];
-
-	//// 右边的四列
-	//for (int r = 0; r < height + 1; ++r)
-	//	for (int c = width + 1; c < width + 5; ++c)
-	//		img264Constructed[r][c] = img264Constructed[r][width];
-
 
 	// 打印初始重建图矩阵进行调试
 	FILE *fout = fopen("initConstruct.txt", "w");
 	assert(fout);
-	for (int i = 1; i < height + 1; ++i)
+	for (int i = 0; i < height + 4; ++i)
 	{
-		for (int j = 1; j < width + 1; ++j)
+		for (int j = 0; j < width + 4; ++j)
 		{
-			fprintf(fout, "%4d", img264Constructed[i][j]);
+			fprintf(fout, "%4d", imgLSConstructed[i][j]);
 		}
 		fprintf(fout, "\n");
 	}
@@ -296,26 +300,22 @@ int main(int argc, char *argv[])
 	}
 	fclose(fout);
 
-	//将输入图像值赋值给img264Constructed  重建图像数组
-	//for(int r = 0; r < height + 4; r++)    
-	//{
-	//	for(int c = 0; c < width + 4; c++)
-	//	{
-	//		if(r < 2 || c < 2 || r > height + 2 || c > 2 + width)
-	//			imgLSConstructed[r][c] = 128;
-	//		else
-	//			imgLSConstructed[r][c] = img[r - 2][c - 2];
-	//	}
-	//}
 	
-	H264resi_energy = predict(img264Constructed, resi264, pre264, height, width);
-	cout << "Total energy: " << H264resi_energy << endl;
-	//printf("%32lld\n", H264resi_energy);
-	printf("%I64d\n", H264resi_energy);
-	//LS_resi_energy = predict_LS(imgLSConstructed[1028][1028],LS_resi[1024][1024],  );
+	LS_resi_energy = predict(imgLSConstructed, LS_resi, preLS, height, width);
+	cout << "Total energy: " << LS_resi_energy << endl;
+
+	int blocknum = 0;  //总块数为65536
+	for(int i = 0; i < 9; ++i)
+	{
+		cout << "count: " << i << " " << count[i] << endl;
+		blocknum += count[i];
+	}
+	cout << "blocknum: " << blocknum << endl;
+
+	printf("预测结束\n");
 
 	// 打印残差矩阵进行调试
-	
+
 	if((fout = fopen("resi.txt", "w")) == NULL)
 	{
 		printf("oppenning error output_text\n");
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
 	{
 		for (int j = 0; j < width; ++j)
 		{
-			fprintf(fout, "%4d", resi264[i][j]);
+			fprintf(fout, "%4d", LS_resi[i][j]);
 		}
 		fprintf(fout, "\n");
 	}
@@ -337,73 +337,64 @@ int main(int argc, char *argv[])
 		printf("oppenning error fileout\n");
 		exit(0);
 	}
-	fwrite(img264Constructed, sizeof(short), 1025 * 1029, fileout);
+	fwrite(imgLSConstructed, sizeof(short), 1028 * 1028, fileout);
 	fclose(fileout);
 
 	//// 转换成8bit
-	unsigned char **pRes = new unsigned char*[1025];
-	for (int i = 0; i < 1025; ++i)
-		pRes[i] = new unsigned char[1029];
+	unsigned char **pRes = new unsigned char*[1028];
+	for (int i = 0; i < 1028; ++i)
+		pRes[i] = new unsigned char[1028];
 
-	for (int r = 0; r < 1025; ++r)
-		for (int c = 0; c < 1029; ++c)
-			pRes[r][c] = static_cast<unsigned char>(img264Constructed[r][c]);
+	for (int r = 0; r < 1028; ++r)
+		for (int c = 0; c < 1028; ++c)
+			pRes[r][c] = static_cast<unsigned char>(imgLSConstructed[r][c]);
 	fileout = fopen("img264Constructed_8bit.raw", "wb");
 	if (fileout == NULL)
 	{
 		printf("openning error fileout\n");
 		exit(0);
 	}
-	for (int r = 1; r < 1025; ++r)
-		fwrite(pRes[r] + 1, sizeof(unsigned char), 1024, fileout);
+	for (int r = 2; r < 1026; ++r)
+		fwrite(pRes[r] + 2, sizeof(unsigned char), 1024, fileout);
 	fclose(fileout);
-	for (int i = 0; i < 1025; ++i)
+	for (int i = 0; i < 1028; ++i)
 		delete [] pRes[i];
 	delete [] pRes;
 	pRes = NULL;
-	////
 	//打印最终的重建图像
-	if((fileout = fopen("out_img264Constructed.txt", "w")) == NULL)
+	if((fileout = fopen("out_imgLSConstructed.txt", "w")) == NULL)
 	{
-		printf("oppenning error output_text\n");
+		printf("oppenning error out_imgLSConstructed\n");
 		exit(0);
 	}
-	for(int r = 1; r < height + 1; ++r)
+	for(int r = 2; r < height + 2; ++r)
 	{
-		for(int c = 1; c < width + 1; ++c)
-			fprintf(fileout, "%4d", img264Constructed[r][c]);
+		for(int c = 2; c < width + 2; ++c)
+			fprintf(fileout, "%4d", imgLSConstructed[r][c]);
 		fprintf(fileout, "\n");
 	}
 	fclose(fileout);
-	
 
-	printf("预测成功\n");
+	// 动态分配的内存的释放
+	for(int i = 0; i < height + 4; i++)  
+		free(imgLSConstructed[i]);  
+	free(imgLSConstructed);
 
+	for(int i = 0; i < height; i++)  
+		free(LS_resi[i]);  
+	free(LS_resi);
 
-	
+	for(int i = 0; i < height; i++)  
+		free(preLS[i]);  
+	free(preLS);
 
-	// 释放空间
-	/*for(int i = 0; i < height; i++)  
-		free(pre[i]);  
-	free(pre);*/
 
 	for(int i = 0; i < height; i++)  
 		free(img[i]);  
 	free(img);
 
-	//free(resi);
-	//resi = NULL;
-
 	free(img_in);
 	img_in = NULL;
-
-	//fclose(filein);
-	filein = NULL;
-
-	fclose(fileout);
-	fileout = NULL;
-
-	// 动态分配的内存的释放，二维动态数组的参数
 
 	return 0;
 }

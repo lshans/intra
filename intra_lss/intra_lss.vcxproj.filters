@@ -18,10 +18,16 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="predict264.cpp">
+    <ClCompile Include="EstimatePara_uniform.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="H264_DCT_Quanter.cpp">
+    <ClCompile Include="predict_uniform.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="predictLS.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DCT_Quanter.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
