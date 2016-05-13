@@ -25,7 +25,11 @@ short block_pre5[4][4] = {0};				 //每一个小块的预测值
 short block_pre6[4][4] = {0};				 //每一个小块的预测值
 short block_pre7[4][4] = {0};				 //每一个小块的预测值
 short block_pre8[4][4] = {0};				 //每一个小块的预测值
+int count_para_mode[1][9] = {0};
 int count[9] = {0};
+
+
+struct block blocktab[256][256];
 
 //short dc_left_image[256][256][8][8];    // 全局块
 //short dc_top_image[256][256][8][8];
@@ -114,7 +118,7 @@ void transfer_end(short **img, unsigned char *img_in,  int height, int width, in
 
 int main(int argc, char *argv[])
 {
-	freopen("engery.txt", "w", stdout);
+	freopen("engery2.txt", "w", stdout);
 	FILE *filein = NULL;				// 输入原图
 	FILE *fileout = NULL;				// 输出编码后的图像
 	int  height;						// 原图高
@@ -305,11 +309,15 @@ int main(int argc, char *argv[])
 	cout << "Total energy: " << LS_resi_energy << endl;
 
 	int blocknum = 0;  //总块数为65536
-	for(int i = 0; i < 9; ++i)
+	for(int i = 0; i < 1; ++i)
 	{
-		cout << "count: " << i << " " << count[i] << endl;
-		blocknum += count[i];
+		for(int j = 0; j < 9; ++j)
+		{
+			cout << "count_para_mode: " << i << " "<< j << " " << count_para_mode[0][j] << endl;
+			blocknum += count_para_mode[0][j];
+		}
 	}
+
 	cout << "blocknum: " << blocknum << endl;
 
 	printf("预测结束\n");

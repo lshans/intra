@@ -39,9 +39,12 @@ void Mult(double **mat1, double **mat2,double **resMat, int H1, int W1, int K1)	
 bool Gauss(double **A, double **B, int n)  
 {  
 	int i, j, k;  
-	double max, temp;  
-	double t[N][N];                //临时矩阵  
-	//将A矩阵存放在临时矩阵t[n][n]中  
+	double max, temp; 
+	double **t = NULL;
+	t = (double **)calloc(10, sizeof(double *));
+	for(int i = 0; i < 10; i++)
+		t[i] = (double *)calloc(10,sizeof(double));
+	//将A矩阵存放在临时矩阵t[n][n]中
 	for (i = 0; i < n; i++)  
 	{  
 		for (j = 0; j < n; j++)  
@@ -109,14 +112,387 @@ bool Gauss(double **A, double **B, int n)
 				}  
 			}  
 		}  
-	}  
+	} 
+	for(int i = 0; i < 10; i++)  
+		free(t[i]);  
+	free(t);
 	return true;  
 } 
-
-
-void AccumulateParaAB(double **paraA, double **paraB, short block_image[8][8], int x, int y, int mode)
+void AccumulateParaAB_one_para(double **paraA, double **paraB, short block_image[8][8], int i, int j, int mode)
 {   //需要调整多个块累加的程序。。。。??
-	static unsigned char u[2][2] = {0};	// u[y][x] equals to u(x, y)
+	static short u[2] = {0};	// u[y][x] equals to u(x, y) y equals i, x equals j
+	switch (mode)
+	{
+	case 0: 
+		u[1] = (block_image[i - 1][j] + block_image[i - 2][j]) / 2;
+		break;
+	case 1: 
+		u[1] = (block_image[i][j - 1] + block_image[i][j - 2]) / 2;
+		break;
+	case 2:
+		u[1] = (block_image[i - 1][j - 1] + block_image[i - 1][j] + block_image[i][j - 1]) / 3;
+		break;
+	case 3:
+		u[1] = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2] + 2) / 4;
+		break;
+	case 4:
+		u[1] = (block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + 2 * block_image[i - 1][j] + 2) / 4;
+		break;	
+	case 5:
+		u[1] = (block_image[i - 1][j] + block_image[i - 1][j - 1] + 1) / 2;
+		break;	
+	case 6:
+		u[1] = (block_image[i][j - 1] + block_image[i - 1][j - 1] + 1) / 2;
+		break;	
+	case 7:
+		u[1] = (block_image[i - 1][j] + block_image[i - 1][j + 1] + 1) / 2;   
+		break;	
+	case 8:
+		u[1] = (block_image[i][j - 1] + block_image[i + 1][j - 1] + 1) / 2;
+		break;	
+	default:
+		break;
+	}
+	u[0] = block_image[i][j];
+
+	paraA[0][0] += u[1] * u[1];
+	paraB[0][0] += u[0] * u[1];
+	
+}
+void estimate_one_para(short block_image[8][8], double **para, int mode)
+{
+
+	double **paraA = NULL;
+	double **paraB = NULL;
+	double **result = NULL;
+	short pixAverage = 0;              //当前块像素的平均值
+	short pixSum = 0;              //像素的总和
+
+	paraA  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		paraA[i] = (double *)calloc(4,sizeof(double));
+	}
+
+	result  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		result[i] = (double *)calloc(4,sizeof(double));
+	}
+
+	paraB  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		paraB[i] = (double *)calloc(1,sizeof(double));
+	}
+
+	for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			AccumulateParaAB_one_para(paraA, paraB, block_image, i, j, mode);
+
+
+
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		paraA[0][0] = 1;
+	//		paraA[0][1] = 1;
+	//		paraA[0][2] = 2;
+	//		paraA[1][0] = -1;
+	//		paraA[1][1] = 2;
+	//		paraA[1][2] = 0;
+	//		paraA[2][0] = 1;
+	//		paraA[2][1] = 1;
+	//		paraA[2][2] = 3;
+	//	}
+	//}
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		paraB[0][0] = 1;
+	//		paraB[1][0] = 0;
+	//		paraB[2][0] = 0;
+	//	}
+	//}
+
+	if (Gauss(paraA, result, 1))  
+	{  
+		printf("Matrix A inve is\n");
+		for(int i = 0; i < 1; ++i)
+		{
+			for(int j = 0; j < 1; ++j)
+			{
+				printf("%.15lf ", result[i][j]); 
+			}
+			printf("\n");
+		}
+	} 
+	// 矩阵求逆l
+	//double *res_temp = MatrixOpp((double *)paraA, 3, 3); 
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		printf("%d\n", paraA[i][j]);
+	//	}
+	//}
+
+	//long long a = getA(paraA, 3);  
+	//if(a==0)  
+	//{  
+	//	printf("can not transform!\n");  
+	//}  
+	//else  
+	//{  
+	//	getAStart(paraA, 3, result);  
+	//	for(int i=0;i<3;i++)  
+	//	{  
+	//		for(int j=0;j<3;j++)  
+	//		{  
+	//			printf("%.3lf ",(double)result[i][j]/a);  
+	//		}  
+	//		printf("\n");  
+	//	}  
+	//}
+
+
+	//for(int i = 0; i < 9; i++)
+	//{
+	//		printf("%lf\n", res_temp[i]);
+	//
+	//}
+	//
+	//
+	//for (int i = 0; i < 3; ++i)
+	//	for (int j = 0; j < 3; ++j)
+	//		result[i][j] = res_temp[i * 3 + j];
+	////????
+	//free(res_temp);
+	//
+	//{
+	//	FILE *fout = fopen("res.txt", "w");
+	//	for (int i = 0; i < 3; ++i)
+	//	{
+	//		for (int j = 0; j < 3; ++j)
+	//			fprintf(fout, "%6.2f, ", result[i][j]);
+	//		fprintf(fout, "\n");
+	//	}
+	//	fclose(fout);
+	//}
+
+
+	//矩阵result 与paraB相乘
+	Mult(result, paraB, para, 1, 1, 1);
+
+
+	//for (int i = 0; i < height + 4; ++i)
+	//	free(matrix_in[i]);
+	//free(matrix_in);
+
+	for (int i = 0; i < 4; ++i)
+	{
+		free(result[i]);
+		free(paraA[i]);
+		free(paraB[i]);
+	}
+	free(result);
+	free(paraA);
+	free(paraB);
+}
+void AccumulateParaAB_two_para(double **paraA, double **paraB, short block_image[8][8], int i, int j, int mode)
+{   //需要调整多个块累加的程序。。。。??
+	static short u[3] = {0};	// u[y][x] equals to u(x, y) y equals i, x equals j
+	switch (mode)
+	{
+	case 0: case 1: case 2:
+		u[1] = block_image[i][j - 1];
+		u[2] = (block_image[i - 1][j - 1] + 2 * block_image[i - 1][j] + block_image[i - 2][j]) / 4;
+		break;
+	case 3:
+		u[1] = block_image[i][j - 1];
+		u[2] = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + 2 * block_image[i - 1][j + 2]) / 5;
+		break;
+	case 4:
+		u[1] = block_image[i][j - 1];//可自己构造，与模式3对称
+		u[2] = (2 * block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j]) / 5;
+		break;	
+	case 5:
+		u[1] = block_image[i][j - 1];
+		u[2] = (block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j]) / 4;  //自己构造
+		break;	
+	case 6:
+		u[1] = (block_image[i][j - 1] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j - 2]) / 4;
+		u[2] = block_image[i - 1][j];//可自己构造
+		break;	
+	case 7:
+		u[1] = block_image[i][j - 1];//可自己构造，与模式5对称
+		u[2] = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2]) / 4;
+		break;	
+	case 8:
+		u[1] = (block_image[i][j - 1] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2]) / 4;
+		u[2] = block_image[i - 1][j];//可自己构造，与模式6关于x轴对称。有问题？？？？
+		break;	
+	default:
+		break;
+	}
+	u[0] = block_image[i][j];
+
+	paraA[0][0] += u[1] * u[1];
+	paraA[0][1] += u[1] * u[2];
+	paraA[1][0] += u[1] * u[2];
+	paraA[1][1] += u[2] * u[2];
+
+	paraB[0][0] += u[0] * u[1];
+	paraB[1][0] += u[0] * u[2];
+}
+void estimate_two_para(short block_image[8][8], double **para, int mode)
+{
+
+	double **paraA = NULL;
+	double **paraB = NULL;
+	double **result = NULL;
+	short pixAverage = 0;              //当前块像素的平均值
+	short pixSum = 0;              //像素的总和
+
+	paraA  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		paraA[i] = (double *)calloc(4,sizeof(double));
+	}
+
+	result  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		result[i] = (double *)calloc(4,sizeof(double));
+	}
+
+	paraB  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		paraB[i] = (double *)calloc(1,sizeof(double));
+	}
+
+	for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			AccumulateParaAB_two_para(paraA, paraB, block_image, i, j, mode);
+
+	printf("para end \n");
+
+
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		paraA[0][0] = 1;
+	//		paraA[0][1] = 1;
+	//		paraA[0][2] = 2;
+	//		paraA[1][0] = -1;
+	//		paraA[1][1] = 2;
+	//		paraA[1][2] = 0;
+	//		paraA[2][0] = 1;
+	//		paraA[2][1] = 1;
+	//		paraA[2][2] = 3;
+	//	}
+	//}
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		paraB[0][0] = 1;
+	//		paraB[1][0] = 0;
+	//		paraB[2][0] = 0;
+	//	}
+	//}
+
+	if (Gauss(paraA, result, 2))  
+	{  
+		printf("Matrix A inve is\n");
+		for(int i = 0; i < 2; ++i)
+		{
+			for(int j = 0; j < 2; ++j)
+			{
+				printf("%.15lf ", result[i][j]); 
+			}
+			printf("\n");
+		}
+	} 
+	// 矩阵求逆l
+	//double *res_temp = MatrixOpp((double *)paraA, 3, 3); 
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		printf("%d\n", paraA[i][j]);
+	//	}
+	//}
+
+	//long long a = getA(paraA, 3);  
+	//if(a==0)  
+	//{  
+	//	printf("can not transform!\n");  
+	//}  
+	//else  
+	//{  
+	//	getAStart(paraA, 3, result);  
+	//	for(int i=0;i<3;i++)  
+	//	{  
+	//		for(int j=0;j<3;j++)  
+	//		{  
+	//			printf("%.3lf ",(double)result[i][j]/a);  
+	//		}  
+	//		printf("\n");  
+	//	}  
+	//}
+
+
+	//for(int i = 0; i < 9; i++)
+	//{
+	//		printf("%lf\n", res_temp[i]);
+	//
+	//}
+	//
+	//
+	//for (int i = 0; i < 3; ++i)
+	//	for (int j = 0; j < 3; ++j)
+	//		result[i][j] = res_temp[i * 3 + j];
+	////????
+	//free(res_temp);
+	//
+	//{
+	//	FILE *fout = fopen("res.txt", "w");
+	//	for (int i = 0; i < 3; ++i)
+	//	{
+	//		for (int j = 0; j < 3; ++j)
+	//			fprintf(fout, "%6.2f, ", result[i][j]);
+	//		fprintf(fout, "\n");
+	//	}
+	//	fclose(fout);
+	//}
+
+
+	//矩阵result 与paraB相乘
+	Mult(result, paraB, para, 2, 1, 2);
+
+
+	//for (int i = 0; i < height + 4; ++i)
+	//	free(matrix_in[i]);
+	//free(matrix_in);
+
+	for (int i = 0; i < 4; ++i)
+	{
+		free(result[i]);
+		free(paraA[i]);
+		free(paraB[i]);
+	}
+	free(result);
+	free(paraA);
+	free(paraB);
+}
+void AccumulateParaAB_three_para(double **paraA, double **paraB, short block_image[8][8], int x, int y, int mode)
+{   //需要调整多个块累加的程序。。。。??
+	static short u[2][2] = {0};	// u[y][x] equals to u(x, y)
 	switch (mode)
 	{
 	case 0: case 1: case 2:
@@ -173,8 +549,7 @@ void AccumulateParaAB(double **paraA, double **paraB, short block_image[8][8], i
 	paraB[1][0] += u[1][1] * u[0][0];
 	paraB[2][0] += u[1][1] * u[0][1];
 }
-
-void estimate(short block_image[8][8], double **para, int mode)
+void estimate_three_para(short block_image[8][8], double **para, int mode)
 {
 
 	double **paraA = NULL;
@@ -203,7 +578,7 @@ void estimate(short block_image[8][8], double **para, int mode)
 
 	for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
 		for(int j = 2; j < BLOCKWIDTH + 2; ++j)
-			AccumulateParaAB(paraA, paraB, block_image, j, i, mode);
+			AccumulateParaAB_three_para(paraA, paraB, block_image, j, i, mode);
 
 	printf("para end \n");
 
@@ -317,3 +692,221 @@ void estimate(short block_image[8][8], double **para, int mode)
 	free(paraA);
 	free(paraB);
 }
+void AccumulateParaAB_four_para(double **paraA, double **paraB, short block_image[8][8], int i, int j, int mode)
+{   //需要调整多个块累加的程序。。。。??
+	static short u[5] = {0};	// u[y][x] equals to u(x, y) y equals i, x equals j
+	switch (mode)
+	{
+	case 0: case 1: case 2:
+		u[1] = block_image[i][j - 1];
+		u[2] = block_image[i - 1][j - 1];
+		u[3] = block_image[i - 1][j];
+		u[4] = block_image[i - 2][j];
+		break;
+	case 3:
+		u[1] = block_image[i][j - 1];
+		u[2] = block_image[i - 1][j];
+		u[3] = block_image[i - 1][j + 1];
+		u[4] = block_image[i - 1][j + 2];
+		break;
+	case 4:
+		u[1] = block_image[i][j - 1];
+		u[2] = block_image[i - 1][j - 1];
+		u[3] = block_image[i - 1][j];
+		u[4] = block_image[i - 1][j - 2];
+		break;	
+	case 5:
+		u[1] = block_image[i][j - 1];
+		u[2] = block_image[i - 1][j - 1];
+		u[3] = block_image[i - 1][j];
+		u[4] = (block_image[i - 2][j - 2] + block_image[i - 1][j - 2]) / 2;  //自己构造
+		break;	
+	case 6:
+		u[1] = block_image[i][j - 1];
+		u[2] = block_image[i - 1][j - 1];
+		u[3] = block_image[i - 1][j];
+		u[4] = block_image[i - 1][j - 2];  //可自己构造
+		break;	
+	case 7:
+		u[1] = block_image[i][j - 1];
+		u[2] = block_image[i - 1][j - 1];
+		u[3] = block_image[i - 1][j];
+		u[4] = block_image[i - 1][j + 1];  //可自己构造
+		break;	
+	case 8:
+		u[1] = block_image[i - 1][j];
+		u[2] = block_image[i - 1][j - 1];
+		u[3] = block_image[i][j - 1];
+		u[4] = block_image[i + 1][j - 1];  //可自己构造
+		break;	
+	default:
+		break;
+	}
+	u[0] = block_image[i][j];
+
+	paraA[0][0] += u[1] * u[1];
+	paraA[0][1] += u[1] * u[2];
+	paraA[0][2] += u[1] * u[3];
+	paraA[0][3] += u[1] * u[4];
+	paraA[1][0] += u[1] * u[2];
+	paraA[1][1] += u[2] * u[2];
+	paraA[1][2] += u[2] * u[3];
+	paraA[1][3] += u[2] * u[4];
+	paraA[2][0] += u[1] * u[3];
+	paraA[2][1] += u[2] * u[3];
+	paraA[2][2] += u[3] * u[3];
+	paraA[2][3] += u[3] * u[4];
+	paraA[3][0] += u[1] * u[4];
+	paraA[3][1] += u[2] * u[4];
+	paraA[3][2] += u[3] * u[4];
+	paraA[3][3] += u[4] * u[4];
+
+	paraB[0][0] += u[0] * u[1];
+	paraB[1][0] += u[0] * u[2];
+	paraB[2][0] += u[0] * u[3];
+	paraB[3][0] += u[0] * u[4];
+}
+void estimate_four_para(short block_image[8][8], double **para, int mode)
+{
+
+	double **paraA = NULL;
+	double **paraB = NULL;
+	double **result = NULL;
+	short pixAverage = 0;              //当前块像素的平均值
+	short pixSum = 0;              //像素的总和
+
+	paraA  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		paraA[i] = (double *)calloc(4,sizeof(double));
+	}
+
+	result  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		result[i] = (double *)calloc(4,sizeof(double));
+	}
+
+	paraB  = (double **)calloc(4, sizeof(double *));
+	for(int i = 0; i < 4; i++)
+	{
+		paraB[i] = (double *)calloc(1,sizeof(double));
+	}
+
+	for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			AccumulateParaAB_four_para(paraA, paraB, block_image, i, j, mode);
+
+	printf("para end \n");
+
+
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		paraA[0][0] = 1;
+	//		paraA[0][1] = 1;
+	//		paraA[0][2] = 2;
+	//		paraA[1][0] = -1;
+	//		paraA[1][1] = 2;
+	//		paraA[1][2] = 0;
+	//		paraA[2][0] = 1;
+	//		paraA[2][1] = 1;
+	//		paraA[2][2] = 3;
+	//	}
+	//}
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		paraB[0][0] = 1;
+	//		paraB[1][0] = 0;
+	//		paraB[2][0] = 0;
+	//	}
+	//}
+
+	if (Gauss(paraA, result, 4))  
+	{  
+		printf("Matrix A inve is\n");
+		for(int i = 0; i < 4; ++i)
+		{
+			for(int j = 0; j < 4; ++j)
+			{
+				printf("%.15lf ", result[i][j]); 
+			}
+		printf("\n");
+		}
+	} 
+	// 矩阵求逆l
+	//double *res_temp = MatrixOpp((double *)paraA, 3, 3); 
+	//for(int i = 0; i < 3; i++)
+	//{
+	//	for(int j = 0; j < 3; ++j)
+	//	{
+	//		printf("%d\n", paraA[i][j]);
+	//	}
+	//}
+
+	//long long a = getA(paraA, 3);  
+	//if(a==0)  
+	//{  
+	//	printf("can not transform!\n");  
+	//}  
+	//else  
+	//{  
+	//	getAStart(paraA, 3, result);  
+	//	for(int i=0;i<3;i++)  
+	//	{  
+	//		for(int j=0;j<3;j++)  
+	//		{  
+	//			printf("%.3lf ",(double)result[i][j]/a);  
+	//		}  
+	//		printf("\n");  
+	//	}  
+	//}
+
+
+	//for(int i = 0; i < 9; i++)
+	//{
+	//		printf("%lf\n", res_temp[i]);
+	//
+	//}
+	//
+	//
+	//for (int i = 0; i < 3; ++i)
+	//	for (int j = 0; j < 3; ++j)
+	//		result[i][j] = res_temp[i * 3 + j];
+	////????
+	//free(res_temp);
+	//
+	//{
+	//	FILE *fout = fopen("res.txt", "w");
+	//	for (int i = 0; i < 3; ++i)
+	//	{
+	//		for (int j = 0; j < 3; ++j)
+	//			fprintf(fout, "%6.2f, ", result[i][j]);
+	//		fprintf(fout, "\n");
+	//	}
+	//	fclose(fout);
+	//}
+
+
+	//矩阵result 与paraB相乘
+	Mult(result, paraB, para, 4, 1, 4);
+
+
+	//for (int i = 0; i < height + 4; ++i)
+	//	free(matrix_in[i]);
+	//free(matrix_in);
+
+	for (int i = 0; i < 4; ++i)
+	{
+		free(result[i]);
+		free(paraA[i]);
+		free(paraB[i]);
+	}
+	free(result);
+	free(paraA);
+	free(paraB);
+}
+
