@@ -25,8 +25,9 @@ short block_pre5[4][4] = {0};				 //每一个小块的预测值
 short block_pre6[4][4] = {0};				 //每一个小块的预测值
 short block_pre7[4][4] = {0};				 //每一个小块的预测值
 short block_pre8[4][4] = {0};				 //每一个小块的预测值
-int count_para_mode[1][9] = {0};
+int count_para_mode[4][9] = {0};
 int count[9] = {0};
+int  para_num[4] = {0};											//标记不同参数个数下预测最优的图像块数
 
 
 struct block blocktab[256][256];
@@ -118,7 +119,7 @@ void transfer_end(short **img, unsigned char *img_in,  int height, int width, in
 
 int main(int argc, char *argv[])
 {
-	freopen("engery2.txt", "w", stdout);
+	freopen("engery.txt", "w", stdout);
 	FILE *filein = NULL;				// 输入原图
 	FILE *fileout = NULL;				// 输出编码后的图像
 	int  height;						// 原图高
@@ -231,9 +232,9 @@ int main(int argc, char *argv[])
 		img[i] = (short *)calloc(width,sizeof(short));
 
 	
-	imgLSConstructed = (short **)calloc(height + 4, sizeof(short *));
-	for(int i = 0; i < height + 4; i++)
-		imgLSConstructed[i] = (short *)calloc(width + 4,sizeof(short));
+	imgLSConstructed = (short **)calloc(height + 6, sizeof(short *));
+	for(int i = 0; i < height + 6; i++)
+		imgLSConstructed[i] = (short *)calloc(width + 6,sizeof(short));
 
 	LS_resi = (short **)calloc(height, sizeof(short *));
 	for(int i = 0; i < height; i++)
@@ -265,23 +266,23 @@ int main(int argc, char *argv[])
 	transfer_end(img, img_in, height, width, endian, precision);
 	printf("转换文件成功\n");
 	//将输入图像值赋值给imgLSConstructed  重建图像数组
-	for(int r = 0; r < height + 4; r++)    
+	for(int r = 0; r < height + 6; r++)    
 	{
-		for(int c = 0; c < width + 4; c++)
+		for(int c = 0; c < width + 6; c++)
 		{
-			if(r < 2 || r > height + 1 || c < 2 || c > 1 + width)
+			if(r < 3 || r > height + 2 || c < 3 || c > 2 + width)
 				imgLSConstructed[r][c] = 128;
 			else
-				imgLSConstructed[r][c] = img[r - 2][c - 2];
+				imgLSConstructed[r][c] = img[r - 3][c - 3];
 		}
 	}
 
 	// 打印初始重建图矩阵进行调试
 	FILE *fout = fopen("initConstruct.txt", "w");
 	assert(fout);
-	for (int i = 0; i < height + 4; ++i)
+	for (int i = 0; i < height + 6; ++i)
 	{
-		for (int j = 0; j < width + 4; ++j)
+		for (int j = 0; j < width + 6; ++j)
 		{
 			fprintf(fout, "%4d", imgLSConstructed[i][j]);
 		}
@@ -309,16 +310,38 @@ int main(int argc, char *argv[])
 	cout << "Total energy: " << LS_resi_energy << endl;
 
 	int blocknum = 0;  //总块数为65536
+	/************每个图像块将不同参数个数下预测的结果进行比较取最优***********
+	**************统计各参数个数下，各模式为最优预测的图像块数******************/
+	for(int i = 0; i < 4; ++i)
+	{
+		cout << "para_num: " << i + 1 << endl;
+		for(int j = 0; j < 9; ++j)
+		{
+			cout << "mode " << j << ": " << count_para_mode[i][j] << "\t";
+			blocknum += count_para_mode[i][j];
+		}
+		cout << " " << endl;
+	}
+	cout << "blocknum: " << blocknum << endl;
+	cout << endl;
+	for(int i = 0; i < 4; ++i)
+	{
+		cout << "para_num " << i + 1 << ": "<< para_num[i] << "\t";
+	}
+	/*******************************************************************/
+
+	/**************单独统计每种参数个数下，各模式为最优预测的总图像块数******
 	for(int i = 0; i < 1; ++i)
 	{
 		for(int j = 0; j < 9; ++j)
 		{
-			cout << "count_para_mode: " << i << " "<< j << " " << count_para_mode[0][j] << endl;
+			cout << "count_para_mode: " << j << " " << count_para_mode[0][j] << endl;
 			blocknum += count_para_mode[0][j];
 		}
+		cout << " " << endl;
 	}
-
 	cout << "blocknum: " << blocknum << endl;
+	********************************************************************/
 
 	printf("预测结束\n");
 
@@ -345,16 +368,16 @@ int main(int argc, char *argv[])
 		printf("oppenning error fileout\n");
 		exit(0);
 	}
-	fwrite(imgLSConstructed, sizeof(short), 1028 * 1028, fileout);
+	fwrite(imgLSConstructed, sizeof(short), 1030 * 1030, fileout);
 	fclose(fileout);
 
 	//// 转换成8bit
-	unsigned char **pRes = new unsigned char*[1028];
-	for (int i = 0; i < 1028; ++i)
-		pRes[i] = new unsigned char[1028];
+	unsigned char **pRes = new unsigned char*[1030];
+	for (int i = 0; i < 1030; ++i)
+		pRes[i] = new unsigned char[1030];
 
-	for (int r = 0; r < 1028; ++r)
-		for (int c = 0; c < 1028; ++c)
+	for (int r = 0; r < 1030; ++r)
+		for (int c = 0; c < 1030; ++c)
 			pRes[r][c] = static_cast<unsigned char>(imgLSConstructed[r][c]);
 	fileout = fopen("img264Constructed_8bit.raw", "wb");
 	if (fileout == NULL)
@@ -362,10 +385,10 @@ int main(int argc, char *argv[])
 		printf("openning error fileout\n");
 		exit(0);
 	}
-	for (int r = 2; r < 1026; ++r)
-		fwrite(pRes[r] + 2, sizeof(unsigned char), 1024, fileout);
+	for (int r = 3; r < 1027; ++r)
+		fwrite(pRes[r] + 3, sizeof(unsigned char), 1024, fileout);
 	fclose(fileout);
-	for (int i = 0; i < 1028; ++i)
+	for (int i = 0; i < 1030; ++i)
 		delete [] pRes[i];
 	delete [] pRes;
 	pRes = NULL;
@@ -375,16 +398,16 @@ int main(int argc, char *argv[])
 		printf("oppenning error out_imgLSConstructed\n");
 		exit(0);
 	}
-	for(int r = 2; r < height + 2; ++r)
+	for(int r = 3; r < height + 3; ++r)
 	{
-		for(int c = 2; c < width + 2; ++c)
+		for(int c = 3; c < width + 3; ++c)
 			fprintf(fileout, "%4d", imgLSConstructed[r][c]);
 		fprintf(fileout, "\n");
 	}
 	fclose(fileout);
 
 	// 动态分配的内存的释放
-	for(int i = 0; i < height + 4; i++)  
+	for(int i = 0; i < height + 6; i++)  
 		free(imgLSConstructed[i]);  
 	free(imgLSConstructed);
 

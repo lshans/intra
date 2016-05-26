@@ -8,8 +8,9 @@ extern short block_pre5[4][4];				 //每一个小块的预测值
 extern short block_pre6[4][4];				 //每一个小块的预测值
 extern short block_pre7[4][4];				 //每一个小块的预测值
 extern short block_pre8[4][4];				 //每一个小块的预测值
-extern int count_para_mode[1][9];
+extern int count_para_mode[4][9];
 extern int count[9];
+extern int  para_num[4];											//标记不同参数个数下预测最优的图像块数
 
 struct block{
 	long long min_energy;

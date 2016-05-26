@@ -103,18 +103,12 @@ void IDCTCore4x4(int16_t tblock[4][4], int16_t block[4][4])
 
 static  int def_quant4_mf[6][4][4] =
 {
-	{ { 13107, 8066, 13107, 8066 }, { 8066, 5243, 8066, 5243 },
-	{ 13107, 8066, 13107, 8066 }, { 8066, 5243, 8066, 5243 } },
-	{ { 11916, 7490, 11916, 7490 }, { 7490, 4660, 7490, 4660 },
-	{ 11916, 7490, 11916, 7490 }, { 7490, 4660, 7490, 4660 } },
-	{ { 10082, 6554, 10082, 6554 }, { 6554, 4194, 6554, 4194 },
-	{ 10082, 6554, 10082, 6554 }, { 6554, 4194, 6554, 4194 } },
-	{ {  9362, 5825,  9362, 5825 }, { 5825, 3647, 5825, 3647 },
-	{  9362, 5825,  9362, 5825 }, { 5825, 3647, 5825, 3647 } },
-	{ {  8192, 5243,  8192, 5243 }, { 5243, 3355, 5243, 3355 },
-	{  8192, 5243,  8192, 5243 }, { 5243, 3355, 5243, 3355 } },
-	{ {  7282, 4559,  7282, 4559 }, { 4559, 2893, 4559, 2893 },
-	{  7282, 4559,  7282, 4559 }, { 4559, 2893, 4559, 2893 } }
+	{ { 13107, 8066, 13107, 8066 }, { 8066, 5243, 8066, 5243 },{ 13107, 8066, 13107, 8066 }, { 8066, 5243, 8066, 5243 } },
+	{ { 11916, 7490, 11916, 7490 }, { 7490, 4660, 7490, 4660 },{ 11916, 7490, 11916, 7490 }, { 7490, 4660, 7490, 4660 } },
+	{ { 10082, 6554, 10082, 6554 }, { 6554, 4194, 6554, 4194 },{ 10082, 6554, 10082, 6554 }, { 6554, 4194, 6554, 4194 } },
+	{ {  9362, 5825,  9362, 5825 }, { 5825, 3647, 5825, 3647 },{  9362, 5825,  9362, 5825 }, { 5825, 3647, 5825, 3647 } },
+	{ {  8192, 5243,  8192, 5243 }, { 5243, 3355, 5243, 3355 },{  8192, 5243,  8192, 5243 }, { 5243, 3355, 5243, 3355 } },
+	{ {  7282, 4559,  7282, 4559 }, { 4559, 2893, 4559, 2893 },{  7282, 4559,  7282, 4559 }, { 4559, 2893, 4559, 2893 } }
 };
 static int dequant_mf[6][4][4] =
 {
@@ -140,10 +134,10 @@ static void quant_4x4_core( int16_t dct[4][4], int quant_mf[4][4], int i_qbits, 
 }
 static void quant_4x4(int16_t dct[4][4], int quant_mf[6][4][4], int i_qscale, int b_intra )
 {
-	const int i_qbits = 15 + i_qscale / 6;
-	const int i_mf = i_qscale % 6;
+	const int i_qbits = 15 + i_qscale / 6;   //i_qscale is QP
+	const int i_mf = i_qscale % 6;           //i_mf共有6组值，每一组对应一个Qstep量化步长取值，Qstep随QP取值每增加6而增加一倍。
 	const int f = ( 1 << i_qbits ) / ( b_intra ? 3 : 6 );
-	quant_4x4_core( dct, quant_mf[i_mf], i_qbits, f );
+	quant_4x4_core( dct, quant_mf[i_mf], i_qbits, f);
 }
 #define DEQUANT_SHL( x ) \
 	dct[y][x] = ( dct[y][x] * dequant_mf[i_mf][y][x] ) << i_qbits
@@ -182,8 +176,8 @@ static void dequant_4x4( int16_t dct[4][4], int dequant_mf[6][4][4], int i_qp )
 }
 
 #define ZIG(i,y,x) level[i] = dct[y][x];
-static  void scan_zigzag_4x4full( int16_t level[16], int16_t dct[4][4])
-{
+static  void scan_zigzag_4x4full( int16_t level[16], int16_t dct[4][4])  
+{   //zig-zag 扫描顺序
 	ZIG( 0,0,0) ZIG( 1,0,1) ZIG( 2,1,0) ZIG( 3,2,0)
 		ZIG( 4,1,1) ZIG( 5,0,2) ZIG( 6,0,3) ZIG( 7,1,2)
 		ZIG( 8,2,1) ZIG( 9,3,0) ZIG(10,3,1) ZIG(11,2,2)
@@ -206,14 +200,14 @@ void  forward4x4(int16_t InData[4][4],int16_t OutData[16])
 {
   int16_t tmp[4][4];
   DCTCore4x4(InData,tmp);
-  quant_4x4(tmp,def_quant4_mf,10,1);
+  quant_4x4(tmp,def_quant4_mf,1,1);  //	QP is 1,modify QP by third parameter
   scan_zigzag_4x4full(OutData,tmp);
 }
 void inverse4x4(int16_t InData[16],int16_t OutData[4][4])
 {
   int16_t tmp[4][4];
   unscan_zigzag_4x4full(tmp,InData);
-  dequant_4x4(tmp,dequant_mf,10);
+  dequant_4x4(tmp,dequant_mf,1);  //	QP is 1,modify QP by third parameter
   IDCTCore4x4(tmp,OutData);
 }
 void DCT_Quanter(int16_t inputData[4][4], int16_t outputData[4][4])

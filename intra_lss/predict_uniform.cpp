@@ -4,7 +4,7 @@
 #include <memory>
 #include "pre.h"
 #include "common.h"
-void predict_one_para(short block_image[8][8], short resi[4][4], double **para, int mode)
+void predict_one_para(short block_image[10][10], short resi[4][4], double **para, int mode)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	short block_resi[4][4] = {0};          	   //每一个小块的残差值
@@ -19,97 +19,97 @@ void predict_one_para(short block_image[8][8], short resi[4][4], double **para, 
 	{
 	case 0: 
 		//0,1,4,5,6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i - 1][j] + block_image[i - 2][j]) / 2;
-				block_012pre[i - 2][j - 2] = para[0][0] * u[1];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 1: 
 		//0,1,4,5,6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i][j - 1] + block_image[i][j - 2]) / 2;
-				block_012pre[i - 2][j - 2] = para[0][0] * u[1];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 2:
 		//0,1,4,5,6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i - 1][j - 1] + block_image[i - 1][j] + block_image[i][j - 1]) / 3;
-				block_012pre[i - 2][j - 2] = para[0][0] * u[1];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 3:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2] + 2) / 4;
-				block_pre3[i - 2][j - 2] = para[0][0] * u[1];
+				block_pre3[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 4:
 		//4模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + 2 * block_image[i - 1][j] + 2) / 4;
-				block_pre4[i - 2][j - 2] = para[0][0] * u[1];
+				block_pre4[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 5:
 		//5模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i - 1][j] + block_image[i - 1][j - 1] + 1) / 2;
-				block_pre5[i - 2][j - 2] = para[0][0] * u[1];
+				block_pre5[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 6:
 		//6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i][j - 1] + block_image[i - 1][j - 1] + 1) / 2;
-				block_pre6[i - 2][j - 2] = para[0][0] * u[1];
+				block_pre6[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 7:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i - 1][j] + block_image[i - 1][j + 1] + 1) / 2;   
-				block_pre7[i - 2][j - 2] = para[0][0] * u[1];
+				block_pre7[i - 3][j - 3] = para[0][0] * u[1];
 			}
 		}
 		break;
 	case 8:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = (block_image[i][j - 1] + block_image[i + 1][j - 1] + 1) / 2;//可自己构造，与模式6关于x轴对称
-				block_pre8[i - 2][j - 2] = para[0][0] * u[1];
+				block_pre8[i - 3][j - 3] = para[0][0] * u[1];
 				//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre8[i - 2][j - 2];//预测残差
 				//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 				//resi_energy += energy_temp;
@@ -121,7 +121,7 @@ void predict_one_para(short block_image[8][8], short resi[4][4], double **para, 
 		break;
 	}
 }
-void predict_two_para(short block_image[8][8], short resi[4][4], double **para, int mode)
+void predict_two_para(short block_image[10][10], short resi[4][4], double **para, int mode)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	short block_resi[4][4] = {0};          	   //每一个小块的残差值
@@ -134,84 +134,109 @@ void predict_two_para(short block_image[8][8], short resi[4][4], double **para, 
 	static short u[3] = {0};
 	switch (mode)
 	{
-	case 0: case 1: case 2:
-		//0,1,4,5,6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+	case 0:
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
+			{
+				u[1] = block_image[i - 1][j];
+				u[2] = block_image[i - 2][j];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
+			}
+		}
+		break;
+	case 1:
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
+		{
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
+			{
+				u[1] = block_image[i][j - 2];
+				u[2] = block_image[i][j - 1];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
+			}
+		}
+		break;
+	case 2:
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
+		{
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = (block_image[i - 1][j - 1] + 2 * block_image[i - 1][j] + block_image[i - 2][j]) / 4;
-				block_012pre[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
 			}
 		}
 		break;
 	case 3:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + 2 * block_image[i - 1][j + 2]) / 5;
-				block_pre3[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2];
+				block_pre3[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
 			}
 		}
 		break;
 	case 4:
 		//4模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];//可自己构造，与模式3对称
 				u[2] = (2 * block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j]) / 5;
-				block_pre4[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2];
+				block_pre4[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
 			}
 		}
 		break;
 	case 5:
 		//5模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
-				u[1] = block_image[i][j - 1];
-				u[2] = (block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j]) / 4;  //自己构造
-				block_pre5[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2];
+				//u[1] = block_image[i][j - 1];
+				//u[2] = (block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j]) / 4;  //自己构造
+				u[1] = block_image[i - 1][j - 1];
+				u[2] = block_image[i - 1][j];
+				block_pre5[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
 			}
 		}
 		break;
 	case 6:
 		//6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
-				u[1] = (block_image[i][j - 1] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j - 2]) / 4;
-				u[2] = block_image[i - 1][j];//可自己构造
-				block_pre6[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2];
+				u[1] = block_image[i][j - 1];
+				u[2] = block_image[i - 1][j - 1];
+				block_pre6[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
 			}
 		}
 		break;
 	case 7:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
-				u[1] = block_image[i][j - 1];//可自己构造，与模式5对称
-				u[2] = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2]) / 4;
-				block_pre7[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2];
+// 				u[1] = block_image[i][j - 1];//可自己构造，与模式5对称
+// 				u[2] = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2]) / 4;
+				u[1] = block_image[i -1][j];
+				u[2] = block_image[i - 1][j + 1];
+				block_pre7[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
 			}
 		}
 		break;
 	case 8:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				u[1] = (block_image[i][j - 1] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2]) / 4;
-				u[2] = block_image[i - 1][j];//可自己构造，与模式6关于x轴对称
-				block_pre8[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2];
+				u[1] = block_image[i + 1][j - 1];
+				u[2] = block_image[i][j - 1];//可自己构造，与模式6关于x轴对称
+				block_pre8[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2];
 				//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre8[i - 2][j - 2];//预测残差
 				//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 				//resi_energy += energy_temp;
@@ -223,7 +248,7 @@ void predict_two_para(short block_image[8][8], short resi[4][4], double **para, 
 		break;
 	}
 }
-void predict_three_para(short block_image[8][8], short resi[4][4], double **para, int mode)
+void predict_three_para(short block_image[10][10], short resi[4][4], double **para, int mode)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	short block_resi[4][4] = {0};          	   //每一个小块的残差值
@@ -236,18 +261,42 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 	short North, NW, W;
 	switch (mode)
 	{
-		case 0: case 1: case 2:
-			//0,1,4,5,6模式可以用下面公式计算
-			for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		case 0:
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
+				{
+					North = block_image[i - 1][j + 1];
+					NW = block_image[i - 1][j];
+					W  = block_image[i - 1][j - 1];
+					block_012pre[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+				}
+			}
+			break;
+		case 1:
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
+			{
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
+				{
+					North = block_image[i - 1][j - 1];
+					NW = block_image[i][j - 1];
+					W  = block_image[i + 1][j - 1];
+					block_012pre[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+				}
+			}
+			break;
+		case 2:
+			//0,1,4,5,6模式可以用下面公式计算
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
+			{
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 				{
 					North = block_image[i - 1][j];
 					NW = block_image[i - 1][j - 1];
 					W  = block_image[i][j - 1];
 // 					block_pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 // 					resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre[i - 2][j - 2];//预测残差
-					block_012pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+					block_012pre[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre012[i - 2][j - 2];//预测残差
 					//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 
@@ -257,16 +306,19 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 			}
 			break;
 		case 3:
-			for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 				{
-					North = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2]) / 4;
-					NW = block_image[i - 1][j];
-					W  = block_image[i][j - 1];
+// 					North = (block_image[i - 1][j] + 2 * block_image[i - 1][j + 1] + block_image[i - 1][j + 2]) / 4;
+// 					NW = block_image[i - 1][j];
+// 					W  = block_image[i][j - 1];
+					W = block_image[i - 1][j];
+					North = block_image[i - 1][j + 2];
+					NW = block_image[i - 1][j + 1];
 					//block_pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre[i - 2][j - 2];//预测残差
-					block_pre3[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+					block_pre3[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre3[i - 2][j - 2];//预测残差
 					//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 					//resi_energy += energy_temp;
@@ -276,17 +328,20 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 			break;
 		case 4:
 			//4模式可以用下面公式计算
-			for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 				{
-					North = block_image[i - 1][j - 2];
-					NW = (block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j]) / 4;
-					W  = block_image[i][j - 1];
+// 					North = block_image[i - 1][j - 2];
+// 					NW = (block_image[i - 1][j - 2] + 2 * block_image[i - 1][j - 1] + block_image[i - 1][j]) / 4;
+// 					W  = block_image[i][j - 1];
+					North = block_image[i - 1][j];
+					NW    =  block_image[i - 1][j - 1];
+					W     =  block_image[i - 1][j - 2];
 					//block_pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre[i - 2][j - 2];//预测残差
 
-					block_pre4[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+					block_pre4[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre4[i - 2][j - 2];//预测残差
 					//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 					//resi_energy += energy_temp;
@@ -296,16 +351,19 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 			break;
 		case 5:
 			//5模式可以用下面公式计算
-			for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 				{
-					North = (block_image[i - 1][j - 2] + block_image[i - 1][j - 1]) / 2;
-					NW = (block_image[i - 1][j - 1] + block_image[i - 1][j]) / 2;
-					W  = block_image[i][j - 1];
+// 					North = (block_image[i - 1][j - 2] + block_image[i - 1][j - 1]) / 2;
+// 					NW = (block_image[i - 1][j - 1] + block_image[i - 1][j]) / 2;
+// 					W  = block_image[i][j - 1];
+					North = block_image[i - 2][j];
+					NW    = block_image[i - 2][j - 1];
+					W     = block_image[i - 2][j - 2];
 					//block_pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre[i - 2][j - 2];//预测残差
-					block_pre5[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+					block_pre5[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre5[i - 2][j - 2];//预测残差
 					//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 					//resi_energy += energy_temp;
@@ -315,17 +373,20 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 			break;
 		case 6:
 			//6模式可以用下面公式计算
-			for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 				{
-					North = (block_image[i - 1][j - 1] + block_image[i - 2][j - 1]) / 2;
-					NW = block_image[i - 1][j];
-					W = (block_image[i][j - 1] + block_image[i - 1][j - 1]) / 2;
+// 					North = (block_image[i - 1][j - 1] + block_image[i - 2][j - 1]) / 2;
+// 					NW = block_image[i - 1][j];
+// 					W = (block_image[i][j - 1] + block_image[i - 1][j - 1]) / 2;
+					North = block_image[i - 1][j - 1];
+					NW    = block_image[i - 1][j - 2];
+					W     = block_image[i - 1][j - 3];
 					//block_pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre[i - 2][j - 2];//预测残差
 
-					block_pre6[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+					block_pre6[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre6[i - 2][j - 2];//预测残差
 					//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 					//resi_energy += energy_temp;
@@ -334,17 +395,20 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 			}
 			break;
 		case 7:
-			for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 				{
-					North = (block_image[i - 1][j - 1] + block_image[i - 1][j]) / 2;
-					NW = (block_image[i - 1][j] + block_image[i - 1][j + 1]) / 2;
-					W = block_image[i][j - 1];
+// 					North = (block_image[i - 1][j - 1] + block_image[i - 1][j]) / 2;
+// 					NW = (block_image[i - 1][j] + block_image[i - 1][j + 1]) / 2;
+// 					W = block_image[i][j - 1];
+					North = block_image[i - 2][j + 2];
+					NW    = block_image[i - 2][j + 1];
+					W     = block_image[i - 2][j];
 					//block_pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre[i - 2][j - 2];//预测残差
 
-					block_pre7[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+					block_pre7[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre7[i - 2][j - 2];//预测残差
 					//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 					//resi_energy += energy_temp;
@@ -353,9 +417,9 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 			}
 			break;
 		case 8:
-			for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+			for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 			{
-				for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+				for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 				{
 					North = (block_image[i][j - 1] + block_image[i - 1][j - 1]) / 2;
 					NW = block_image[i - 1][j];
@@ -363,7 +427,7 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 					//block_pre[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre[i - 2][j - 2];//预测残差
 
-					block_pre8[i - 2][j - 2] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
+					block_pre8[i - 3][j - 3] = para[0][0] * W + para[1][0]* NW + para[2][0] * North;
 					//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre8[i - 2][j - 2];//预测残差
 					//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 					//resi_energy += energy_temp;
@@ -375,7 +439,7 @@ void predict_three_para(short block_image[8][8], short resi[4][4], double **para
 			break;
     }
 }
-void predict_four_para(short block_image[8][8], short resi[4][4], double **para, int mode)
+void predict_four_para(short block_image[10][10], short resi[4][4], double **para, int mode)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	short block_resi[4][4] = {0};          	   //每一个小块的残差值
@@ -388,58 +452,83 @@ void predict_four_para(short block_image[8][8], short resi[4][4], double **para,
 	static short u[5] = {0};
 	switch (mode)
 	{
-	case 0: case 1: case 2:
-		//0,1,4,5,6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+	case 0: 
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
+			{
+				u[1] = block_image[i - 1][j - 1];
+				u[2] = block_image[i - 1][j];
+				u[3] = block_image[i - 1][j + 1];
+				u[4] = block_image[i - 1][j + 2];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+			}
+		}
+		break;
+	case 1: 
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
+		{
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
+			{
+				u[1] = block_image[i - 2][j - 1];
+				u[2] = block_image[i - 1][j - 1];
+				u[3] = block_image[i][j - 1];
+				u[4] = block_image[i + 1][j - 1];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+			}
+		}
+		break;
+	case 2:
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
+		{
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = block_image[i - 1][j - 1];
 				u[3] = block_image[i - 1][j];
 				u[4] = block_image[i - 2][j];
-				block_012pre[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+				block_012pre[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
 			}
 		}
 		break;
 	case 3:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = block_image[i - 1][j];
 				u[3] = block_image[i - 1][j + 1];
 				u[4] = block_image[i - 1][j + 2];
-				block_pre3[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+				block_pre3[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
 			}
 		}
 		break;
 	case 4:
 		//4模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = block_image[i - 1][j - 1];
 				u[3] = block_image[i - 1][j];
 				u[4] = block_image[i - 1][j - 2];
-				block_pre4[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+				block_pre4[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
 			}
 		}
 		break;
 	case 5:
 		//5模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = block_image[i - 1][j - 1];
 				u[3] = block_image[i - 1][j];
 				u[4] = (block_image[i - 2][j - 2] + block_image[i - 1][j - 2]) / 2;  //自己构造
-				block_pre5[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+				block_pre5[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
 				//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre5[i - 2][j - 2];//预测残差
 				//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 				//resi_energy += energy_temp;
@@ -449,41 +538,41 @@ void predict_four_para(short block_image[8][8], short resi[4][4], double **para,
 		break;
 	case 6:
 		//6模式可以用下面公式计算
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = block_image[i - 1][j - 1];
 				u[3] = block_image[i - 1][j];
 				u[4] = block_image[i - 1][j - 2];  //可自己构造
-				block_pre6[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+				block_pre6[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
 			}
 		}
 		break;
 	case 7:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i][j - 1];
 				u[2] = block_image[i - 1][j - 1];
 				u[3] = block_image[i - 1][j];
 				u[4] = block_image[i - 1][j + 1];  //可自己构造
-				block_pre7[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+				block_pre7[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
 			}
 		}
 		break;
 	case 8:
-		for(int i = 2; i < BLOCKHEIGHT + 2; ++i)
+		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
 		{
-			for(int j = 2; j < BLOCKWIDTH + 2; ++j)
+			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
 			{
 				u[1] = block_image[i - 1][j];
 				u[2] = block_image[i - 1][j - 1];
 				u[3] = block_image[i][j - 1];
 				u[4] = block_image[i + 1][j - 1];  //可自己构造
-				block_pre8[i - 2][j - 2] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
+				block_pre8[i - 3][j - 3] = para[0][0] * u[1] + para[1][0]* u[2] + para[2][0] * u[3] + para[3][0] * u[4];
 				//resi_temp[i - 2][j - 2] = block_image[i][j] - block_pre8[i - 2][j - 2];//预测残差
 				//energy_temp = resi_temp[i - 2][j - 2] * resi_temp[i - 2][j - 2];
 				//resi_energy += energy_temp;
