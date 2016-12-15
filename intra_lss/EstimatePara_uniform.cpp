@@ -6,6 +6,7 @@
 #include <iostream>
 #include "pre.h"
 #include "common.h"
+#include <cassert>
 
 const int N = 3;
 using namespace std; 
@@ -726,6 +727,8 @@ void estimate_three_para(short block_image[10][10], double **para, int mode)
 	free(paraA);
 	free(paraB);
 }
+
+/****************备份原来的模式与角度对应关系!!!!!!!!!!!!!!!!!!!!******************************/
 void AccumulateParaAB_four_para(double **paraA, double **paraB, short block_image[10][10], int i, int j, int mode)
 {   //需要调整多个块累加的程序。。。。??
 	static short u[5] = {0};	// u[y][x] equals to u(x, y) y equals i, x equals j
@@ -962,3 +965,229 @@ void estimate_four_para(short block_image[10][10], double **para, int mode)
 	free(paraB);
 }
 
+
+/****************备份楔形滤波器模式与角度对应关系!!!!!!!!!!!!!!!!!!!!******************************/
+//void AccumulateParaAB_four_para(double **paraA, double **paraB, short block_image[10][10], int i, int j, int mode)
+//	{   //需要调整多个块累加的程序。。。。??
+//		static short u[5] = {0};	// u[y][x] equals to u(x, y) y equals i, x equals j
+//		switch (mode)
+//		{
+//		case 1:   
+//			u[1] = block_image[i][j - 1];
+//			u[2] = block_image[i][j - 2];
+//			u[3] = block_image[i][j - 3];
+//			u[4] = block_image[i - 1][j - 2];
+//			break;
+//		case 2:  
+//			u[1] = block_image[i - 1][j];
+//			u[2] = block_image[i - 1][j + 1];
+//			u[3] = block_image[i - 1][j + 2];
+//			u[4] = block_image[i - 2][j + 2];
+//			break;
+//		case 3:   
+//			u[1] = block_image[i - 1][j];
+//			u[2] = block_image[i - 1][j + 1];
+//			u[3] = block_image[i - 2][j + 1];
+//			u[4] = block_image[i - 2][j + 2];
+//			break;
+//		case 4:   
+//			u[1] = block_image[i - 1][j];
+//			u[2] = block_image[i - 1][j + 1];
+//			u[3] = block_image[i - 2][j];
+//			u[4] = block_image[i - 2][j + 1];
+//			break;
+//		case 5:   
+//			u[1] = block_image[i - 1][j - 1];
+//			u[2] = block_image[i - 1][j];
+//			u[3] = block_image[i - 1][j + 1];
+//			u[4] = block_image[i - 2][j];
+//			break;	
+//		case 6:   
+//			u[1] = block_image[i - 1][j - 1];
+//			u[2] = block_image[i - 1][j];
+//			u[3] = block_image[i - 2][j - 1];
+//			u[4] = block_image[i - 2][j];  //自己构造
+//			break;	
+//		case 7:   
+//			u[1] = block_image[i][j - 1];
+//			u[2] = block_image[i - 1][j - 1];
+//			u[3] = block_image[i - 1][j];
+//			u[4] = block_image[i - 2][j - 2];  //可自己构造
+//			break;	
+//		case 8:   /*7*/
+//			u[1] = block_image[i][j - 1];
+//			u[2] = block_image[i - 1][j - 2];
+//			u[3] = block_image[i - 1][j - 1];
+//			u[4] = block_image[i - 1][j];  //可自己构造
+//			break;	
+//		default:
+//			assert("遍历mode出错!");
+//		}
+//		u[0] = block_image[i][j];
+//	
+//		paraA[0][0] += u[1] * u[1];
+//		paraA[0][1] += u[1] * u[2];
+//		paraA[0][2] += u[1] * u[3];
+//		paraA[0][3] += u[1] * u[4];
+//		paraA[1][0] += u[1] * u[2];
+//		paraA[1][1] += u[2] * u[2];
+//		paraA[1][2] += u[2] * u[3];
+//		paraA[1][3] += u[2] * u[4];
+//		paraA[2][0] += u[1] * u[3];
+//		paraA[2][1] += u[2] * u[3];
+//		paraA[2][2] += u[3] * u[3];
+//		paraA[2][3] += u[3] * u[4];
+//		paraA[3][0] += u[1] * u[4];
+//		paraA[3][1] += u[2] * u[4];
+//		paraA[3][2] += u[3] * u[4];
+//		paraA[3][3] += u[4] * u[4];
+//	
+//		paraB[0][0] += u[0] * u[1];
+//		paraB[1][0] += u[0] * u[2];
+//		paraB[2][0] += u[0] * u[3];
+//		paraB[3][0] += u[0] * u[4];
+//
+//	}
+//	void estimate_four_para(short block_image[10][10], double **para, int mode)
+//	{
+//	
+//		double **paraA = NULL;
+//		double **paraB = NULL;
+//		double **result = NULL;
+//		short pixAverage = 0;              //当前块像素的平均值
+//		short pixSum = 0;              //像素的总和
+//	
+//		paraA  = (double **)calloc(4, sizeof(double *));
+//		for(int i = 0; i < 4; i++)
+//		{
+//			paraA[i] = (double *)calloc(4,sizeof(double));
+//		}
+//	
+//		result  = (double **)calloc(4, sizeof(double *));
+//		for(int i = 0; i < 4; i++)
+//		{
+//			result[i] = (double *)calloc(4,sizeof(double));
+//		}
+//	
+//		paraB  = (double **)calloc(4, sizeof(double *));
+//		for(int i = 0; i < 4; i++)
+//		{
+//			paraB[i] = (double *)calloc(1,sizeof(double));
+//		}
+//	
+//		for(int i = 3; i < BLOCKHEIGHT + 3; ++i)
+//			for(int j = 3; j < BLOCKWIDTH + 3; ++j)
+//				AccumulateParaAB_four_para(paraA, paraB, block_image, i, j, mode);
+//	
+//		//printf("para end \n");
+//	
+//	
+//		//for(int i = 0; i < 3; i++)
+//		//{
+//		//	for(int j = 0; j < 3; ++j)
+//		//	{
+//		//		paraA[0][0] = 1;
+//		//		paraA[0][1] = 1;
+//		//		paraA[0][2] = 2;
+//		//		paraA[1][0] = -1;
+//		//		paraA[1][1] = 2;
+//		//		paraA[1][2] = 0;
+//		//		paraA[2][0] = 1;
+//		//		paraA[2][1] = 1;
+//		//		paraA[2][2] = 3;
+//		//	}
+//		//}
+//		//for(int i = 0; i < 3; i++)
+//		//{
+//		//	for(int j = 0; j < 3; ++j)
+//		//	{
+//		//		paraB[0][0] = 1;
+//		//		paraB[1][0] = 0;
+//		//		paraB[2][0] = 0;
+//		//	}
+//		//}
+//	
+//		if (Gauss(paraA, result, 4))  
+//		{  
+//			//printf("Matrix A inve is\n");
+//			//for(int i = 0; i < 4; ++i)
+//			//{
+//			//	for(int j = 0; j < 4; ++j)
+//			//	{
+//			//		printf("%.15lf ", result[i][j]); 
+//			//	}
+//			//printf("\n");
+//			//}
+//		} 
+//		// 矩阵求逆l
+//		//double *res_temp = MatrixOpp((double *)paraA, 3, 3); 
+//		//for(int i = 0; i < 3; i++)
+//		//{
+//		//	for(int j = 0; j < 3; ++j)
+//		//	{
+//		//		printf("%d\n", paraA[i][j]);
+//		//	}
+//		//}
+//	
+//		//long long a = getA(paraA, 3);  
+//		//if(a==0)  
+//		//{  
+//		//	printf("can not transform!\n");  
+//		//}  
+//		//else  
+//		//{  
+//		//	getAStart(paraA, 3, result);  
+//		//	for(int i=0;i<3;i++)  
+//		//	{  
+//		//		for(int j=0;j<3;j++)  
+//		//		{  
+//		//			printf("%.3lf ",(double)result[i][j]/a);  
+//		//		}  
+//		//		printf("\n");  
+//		//	}  
+//		//}
+//	
+//	
+//		//for(int i = 0; i < 9; i++)
+//		//{
+//		//		printf("%lf\n", res_temp[i]);
+//		//
+//		//}
+//		//
+//		//
+//		//for (int i = 0; i < 3; ++i)
+//		//	for (int j = 0; j < 3; ++j)
+//		//		result[i][j] = res_temp[i * 3 + j];
+//		////????
+//		//free(res_temp);
+//		//
+//		//{
+//		//	FILE *fout = fopen("res.txt", "w");
+//		//	for (int i = 0; i < 3; ++i)
+//		//	{
+//		//		for (int j = 0; j < 3; ++j)
+//		//			fprintf(fout, "%6.2f, ", result[i][j]);
+//		//		fprintf(fout, "\n");
+//		//	}
+//		//	fclose(fout);
+//		//}
+//	
+//	
+//		//矩阵result 与paraB相乘
+//		Mult(result, paraB, para, 4, 1, 4);
+//	
+//	
+//		//for (int i = 0; i < height + 4; ++i)
+//		//	free(matrix_in[i]);
+//		//free(matrix_in);
+//	
+//		for (int i = 0; i < 4; ++i)
+//		{
+//			free(result[i]);
+//			free(paraA[i]);
+//			free(paraB[i]);
+//		}
+//		free(result);
+//		free(paraA);
+//		free(paraB);
+//	}

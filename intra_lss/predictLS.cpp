@@ -217,7 +217,7 @@ long long CalcBestResi(short block_image[8][8], int16_t block_resi[4][4], int16_
 	}
 	return minRes;
 }
-struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, int i_col, block blocktab[][256])
+struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, int i_col, block blocktab[][256], short mode_block)
 {
 	int R[9];
 	for (int i = 0; i < 9; ++i)
@@ -313,6 +313,11 @@ struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], i
 	//cout << i_row << " "<< i_col << " " << minRes << " " << modeMinRes << endl;
 
 	//count[modeMinRes] += 1;
+
+	/***将最优模式设置成楔形滤波器得到的块方向***/
+	//modeMinRes = mode_block;
+	/***************************************/
+
 	switch (modeMinRes)
 	{
 	case 0:
@@ -720,7 +725,7 @@ struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], i
 // 	free(para);
 // 	return energy_temp;
 // }
-block predict_4_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256])
+block predict_4_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256], int mode_block)
 {
 	double **para = NULL;
 	para = (double **)calloc(10,sizeof(double *));
@@ -748,7 +753,7 @@ block predict_4_parameter(short block_image[10][10], short block_resi[4][4], sho
 	}
 
 	//printf("predict_4_parameter start estimate\n");
-	for(int mode = 0; mode < 9; ++mode)
+	for(int mode = 0; mode < 10; ++mode)
 	{
 		estimate_four_para(block_image, para, mode);
 		//printf("mode %d finally para result is\n", mode);
@@ -763,6 +768,7 @@ block predict_4_parameter(short block_image[10][10], short block_resi[4][4], sho
 		//predict_three_para(Para3_image, resi, predicted, para, height, width);
 		//predict_four_para(Para4_image, resi, predicted, para, height, width);
 	}
+
 	//cout << "\t\t\t\t";
 	//printf("%10d%10d%10d%10d%10d%10d%10d%10d%10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
 	for(int i = 0; i < 4; ++i)
@@ -771,7 +777,7 @@ block predict_4_parameter(short block_image[10][10], short block_resi[4][4], sho
 			cout << "4 predict param\t";
 		else
 			cout << "\t\t\t\t";
-		for(int j = 0; j < 9; ++j)
+		for(int j = 0; j < 10; ++j)
 			printf("%10.4f", para_9mode[i][j]); 
 		printf("\n");
 	}
@@ -779,7 +785,7 @@ block predict_4_parameter(short block_image[10][10], short block_resi[4][4], sho
 	printf("\n");
 
 	//long long energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col);
-	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab);
+	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab, mode_block);
 	//printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, energy_temp);
 
 	//int modeMinRes = 0;
@@ -810,281 +816,281 @@ block predict_4_parameter(short block_image[10][10], short block_resi[4][4], sho
 	free(para_9mode);
 	return energy_temp;
 }
-block predict_3_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256])
-{
-	double **para = NULL;
-	double **para_9mode = NULL;
-	para = (double **)calloc(10,sizeof(double *));
-	for(int i = 0; i < 10; i++)
-	{
-		para[i] = (double *)calloc(1,sizeof(double));
-	}
-	para_9mode = (double **)calloc(10,sizeof(double *));
-	for(int i = 0; i < 10; i++)
-	{
-		para_9mode[i] = (double *)calloc(10,sizeof(double));
-	}
-	int R[9];
-	for (int mode = 0; mode < 9; ++mode)
-		R[mode] = 0;
-
-	for(int r = 0; r < BLOCKHEIGHT + 6; r++)    
-	{
-		for(int c = 0; c < BLOCKWIDTH + 6; c++)
-		{
-			if(r > BLOCKHEIGHT + 2  || (r > 2 && c > BLOCKWIDTH + 2))// 考虑模式3、7,将图像块的右边两列和下边两行的值赋值成128
-				block_image[r][c] = 128;  
-		}
-	}
-
-	//printf("predict_3_parameter start estimate\n");
-	for(int mode = 0; mode < 9; ++mode)
-	{
-		estimate_three_para(block_image, para, mode);
-		//printf("mode %d finally para result is\n", mode);
-		for(int i = 0; i < 3; ++i)
-		{
-			for(int j = 0; j < 1; ++j)
-				para_9mode[i][mode] = para[i][j]; 
-		}
-
-		predict_three_para(block_image, block_resi, para, mode);
-		//predict_two_para(Para2_image, resi, predicted, para, height, width);
-		//predict_three_para(Para3_image, resi, predicted, para, height, width);
-		//predict_four_para(Para4_image, resi, predicted, para, height, width);
-	}
-	//cout << "\t\t\t\t";
-	//printf("%10d%10d%10d%10d%10d%10d%10d%10d%10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
-	for(int i = 0; i < 3; ++i)
-	{
-		if (i == 0)
-			cout << "3 predict param\t";
-		else
-			cout << "\t\t\t\t";
-		for(int j = 0; j < 9; ++j)
-			printf("%10.4f", para_9mode[i][j]); 
-		printf("\n");
-	}
-	//printf("predict_3_parameter estimate and predict end\n");
-	printf("\n");
-
-	//long long energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col);
-	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab);
-	//printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, energy_temp);
-
-	//int modeMinRes = 0;
-	//int minRes = R[modeMinRes];
-	//for (int i = 0; i < 11; ++i)
-	//{
-	//	if (R[i] < R[modeMinRes])
-	//	{
-	//		modeMinRes = i;
-	//		minRes = R[i];
-	//	}
-	//}
-	//printf("BLOCK [%4d][%4d] %d %d\n",i_row, i_col, minRes, modeMinRes);
-	//cout << minRes << endl;
-
-	//count[modeMinRes] += 1;
-	//estimate(block_image, para, i_row, i_col, modeMinRes);
-	//predict_paraN1(block_image, resi, predicted, para, modeMinRes);
-
-	//printf("simple block (%d, %d) end \n", i_row, i_col);
-
-	for(int i = 0; i < 10; ++i)
-	{
-		free(para[i]);
-		free(para_9mode[i]);
-	}
-	free(para);
-	free(para_9mode);
-	return energy_temp;
-}
-block predict_2_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256])
-{
-
-
-	double **para = NULL;
-	double **para_9mode = NULL;
-	para = (double **)calloc(10,sizeof(double *));
-	for(int i = 0; i < 10; i++)
-	{
-		para[i] = (double *)calloc(1,sizeof(double));
-	}
-	para_9mode = (double **)calloc(10,sizeof(double *));
-	for(int i = 0; i < 10; i++)
-	{
-		para_9mode[i] = (double *)calloc(10,sizeof(double));
-	}
-
-	int R[9];
-	for (int mode = 0; mode < 9; ++mode)
-		R[mode] = 0;
-
-	for(int r = 0; r < BLOCKHEIGHT + 6; r++)    
-	{
-		for(int c = 0; c < BLOCKWIDTH + 6; c++)
-		{
-			if(r > BLOCKHEIGHT + 2  || (r > 2 && c > BLOCKWIDTH + 2))// 考虑模式3、7,将图像块的右边两列和下边两行的值赋值成128
-				block_image[r][c] = 128;  
-		}
-	}
-
-	//printf("predict_2_parameter start estimate\n");
-	for(int mode = 0; mode < 9; ++mode)
-	{
-		estimate_two_para(block_image, para, mode);
-		//printf("mode %d finally para result is\n", mode);
-		for(int i = 0; i < 2; ++i)
-		{
-			for(int j = 0; j < 1; ++j)
-				para_9mode[i][mode] = para[i][j]; 
-		}
-
-		predict_two_para(block_image, block_resi, para, mode);
-		//predict_two_para(Para2_image, resi, predicted, para, height, width);
-		//predict_three_para(Para3_image, resi, predicted, para, height, width);
-		//predict_four_para(Para4_image, resi, predicted, para, height, width);
-	}
-	//cout << "\t\t\t\t";
-	//printf("%10d%10d%10d%10d%10d%10d%10d%10d%10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
-	for(int i = 0; i < 2; ++i)
-	{
-		if (i == 0)
-			cout << "2 predict param\t";
-		else
-			cout << "\t\t\t\t";
-		for(int j = 0; j < 9; ++j)
-			printf("%10.4f", para_9mode[i][j]); 
-		printf("\n");
-	}
-	//printf("predict_2_parameter estimate and predict end\n");
-	printf("\n");
-
-	//long long energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col);
-	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab);
-	//printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, energy_temp);
-
-	//int modeMinRes = 0;
-	//int minRes = R[modeMinRes];
-	//for (int i = 0; i < 11; ++i)
-	//{
-	//	if (R[i] < R[modeMinRes])
-	//	{
-	//		modeMinRes = i;
-	//		minRes = R[i];
-	//	}
-	//}
-	//printf("BLOCK [%4d][%4d] %d %d\n",i_row, i_col, minRes, modeMinRes);
-	//cout << minRes << endl;
-
-	//count[modeMinRes] += 1;
-	//estimate(block_image, para, i_row, i_col, modeMinRes);
-	//predict_paraN1(block_image, resi, predicted, para, modeMinRes);
-
-	//printf("simple block (%d, %d) end \n", i_row, i_col);
-
-	for(int i = 0; i < 10; ++i)
-	{
-		free(para[i]);
-		free(para_9mode[i]);
-	}
-	free(para);
-	free(para_9mode);
-	return energy_temp;
-}
-block predict_1_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256])
-{
-	double **para = NULL;
-	para = (double **)calloc(10,sizeof(double *));
-	for(int i = 0; i < 10; i++)
-	{
-		para[i] = (double *)calloc(1,sizeof(double));
-	}
-	double **para_9mode = NULL;
-	para_9mode = (double **)calloc(10,sizeof(double *));
-	for(int i = 0; i < 10; i++)
-	{
-		para_9mode[i] = (double *)calloc(10,sizeof(double));
-	}
-
-	int R[9];
-	for (int mode = 0; mode < 9; ++mode)
-		R[mode] = 0;
-
-	for(int r = 0; r < BLOCKHEIGHT + 6; r++)    
-	{
-		for(int c = 0; c < BLOCKWIDTH + 6; c++)
-		{
-			if(r > BLOCKHEIGHT + 2  || (r > 2 && c > BLOCKWIDTH + 2))// 考虑模式3、7,将图像块的右边两列和下边两行的值赋值成128
-				block_image[r][c] = 128;
-		}
-	}
-
-	//printf("predict_1_parameter start estimate\n");
-	for(int mode = 0; mode < 8; ++mode)
-	{
-		estimate_one_para(block_image, para, mode);
-		//printf("mode %d finally para result is\n", mode);
-		for(int i = 0; i < 1; ++i)
-		{
-			for(int j = 0; j < 1; ++j)
-				para_9mode[i][mode] = para[i][j];  
-		}
-		predict_one_para(block_image, block_resi, para, mode);
-		//predict_two_para(Para2_image, resi, predicted, para, height, width);
-		//predict_three_para(Para3_image, resi, predicted, para, height, width);
-		//predict_four_para(Para4_image, resi, predicted, para, height, width);
-	}
-	//printf("%-10d%-10d%-10d%-10d%-10d%-10d%-10d%-10d%-10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
-	for(int i = 0; i < 1; ++i)
-	{
-		if (i == 0)
-			cout << "1 predict param\t";
-		else
-			cout << "\t\t\t\t";
-		for(int j = 0; j < 9; ++j)
-			//printf("%f\t\t", para_9mode[i][j]);
-			printf("%10.4f", para_9mode[i][j]);
-		printf("\n");
-	}
-	//printf("predict_1_parameter estimate and predict end\n");
-	printf("\n");
-
-	//long long energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col);
-	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab);
-	//printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, energy_temp);
-
-	//int modeMinRes = 0;
-	//int minRes = R[modeMinRes];
-	//for (int i = 0; i < 11; ++i)
-	//{
-	//	if (R[i] < R[modeMinRes])
-	//	{
-	//		modeMinRes = i;
-	//		minRes = R[i];
-	//	}
-	//}
-	//printf("BLOCK [%4d][%4d] %d %d\n",i_row, i_col, minRes, modeMinRes);
-	//cout << minRes << endl;
-
-	//count[modeMinRes] += 1;
-	//estimate(block_image, para, i_row, i_col, modeMinRes);
-	//predict_paraN1(block_image, resi, predicted, para, modeMinRes);
-
-	//printf("simple block (%d, %d) end \n", i_row, i_col);
-
-	for(int i = 0; i < 10; ++i)
-	{
-		free(para[i]);
-		free(para_9mode[i]);
-	}
-	free(para);
-	free(para_9mode);
-	return energy_temp;
-}
+//block predict_3_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256])
+//{
+//	double **para = NULL;
+//	double **para_9mode = NULL;
+//	para = (double **)calloc(10,sizeof(double *));
+//	for(int i = 0; i < 10; i++)
+//	{
+//		para[i] = (double *)calloc(1,sizeof(double));
+//	}
+//	para_9mode = (double **)calloc(10,sizeof(double *));
+//	for(int i = 0; i < 10; i++)
+//	{
+//		para_9mode[i] = (double *)calloc(10,sizeof(double));
+//	}
+//	int R[9];
+//	for (int mode = 0; mode < 9; ++mode)
+//		R[mode] = 0;
+//
+//	for(int r = 0; r < BLOCKHEIGHT + 6; r++)    
+//	{
+//		for(int c = 0; c < BLOCKWIDTH + 6; c++)
+//		{
+//			if(r > BLOCKHEIGHT + 2  || (r > 2 && c > BLOCKWIDTH + 2))// 考虑模式3、7,将图像块的右边两列和下边两行的值赋值成128
+//				block_image[r][c] = 128;  
+//		}
+//	}
+//
+//	//printf("predict_3_parameter start estimate\n");
+//	for(int mode = 0; mode < 9; ++mode)
+//	{
+//		estimate_three_para(block_image, para, mode);
+//		//printf("mode %d finally para result is\n", mode);
+//		for(int i = 0; i < 3; ++i)
+//		{
+//			for(int j = 0; j < 1; ++j)
+//				para_9mode[i][mode] = para[i][j]; 
+//		}
+//
+//		predict_three_para(block_image, block_resi, para, mode);
+//		//predict_two_para(Para2_image, resi, predicted, para, height, width);
+//		//predict_three_para(Para3_image, resi, predicted, para, height, width);
+//		//predict_four_para(Para4_image, resi, predicted, para, height, width);
+//	}
+//	//cout << "\t\t\t\t";
+//	//printf("%10d%10d%10d%10d%10d%10d%10d%10d%10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
+//	for(int i = 0; i < 3; ++i)
+//	{
+//		if (i == 0)
+//			cout << "3 predict param\t";
+//		else
+//			cout << "\t\t\t\t";
+//		for(int j = 0; j < 9; ++j)
+//			printf("%10.4f", para_9mode[i][j]); 
+//		printf("\n");
+//	}
+//	//printf("predict_3_parameter estimate and predict end\n");
+//	printf("\n");
+//
+//	//long long energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col);
+//	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab);
+//	//printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, energy_temp);
+//
+//	//int modeMinRes = 0;
+//	//int minRes = R[modeMinRes];
+//	//for (int i = 0; i < 11; ++i)
+//	//{
+//	//	if (R[i] < R[modeMinRes])
+//	//	{
+//	//		modeMinRes = i;
+//	//		minRes = R[i];
+//	//	}
+//	//}
+//	//printf("BLOCK [%4d][%4d] %d %d\n",i_row, i_col, minRes, modeMinRes);
+//	//cout << minRes << endl;
+//
+//	//count[modeMinRes] += 1;
+//	//estimate(block_image, para, i_row, i_col, modeMinRes);
+//	//predict_paraN1(block_image, resi, predicted, para, modeMinRes);
+//
+//	//printf("simple block (%d, %d) end \n", i_row, i_col);
+//
+//	for(int i = 0; i < 10; ++i)
+//	{
+//		free(para[i]);
+//		free(para_9mode[i]);
+//	}
+//	free(para);
+//	free(para_9mode);
+//	return energy_temp;
+//}
+//block predict_2_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256])
+//{
+//
+//
+//	double **para = NULL;
+//	double **para_9mode = NULL;
+//	para = (double **)calloc(10,sizeof(double *));
+//	for(int i = 0; i < 10; i++)
+//	{
+//		para[i] = (double *)calloc(1,sizeof(double));
+//	}
+//	para_9mode = (double **)calloc(10,sizeof(double *));
+//	for(int i = 0; i < 10; i++)
+//	{
+//		para_9mode[i] = (double *)calloc(10,sizeof(double));
+//	}
+//
+//	int R[9];
+//	for (int mode = 0; mode < 9; ++mode)
+//		R[mode] = 0;
+//
+//	for(int r = 0; r < BLOCKHEIGHT + 6; r++)    
+//	{
+//		for(int c = 0; c < BLOCKWIDTH + 6; c++)
+//		{
+//			if(r > BLOCKHEIGHT + 2  || (r > 2 && c > BLOCKWIDTH + 2))// 考虑模式3、7,将图像块的右边两列和下边两行的值赋值成128
+//				block_image[r][c] = 128;  
+//		}
+//	}
+//
+//	//printf("predict_2_parameter start estimate\n");
+//	for(int mode = 0; mode < 9; ++mode)
+//	{
+//		estimate_two_para(block_image, para, mode);
+//		//printf("mode %d finally para result is\n", mode);
+//		for(int i = 0; i < 2; ++i)
+//		{
+//			for(int j = 0; j < 1; ++j)
+//				para_9mode[i][mode] = para[i][j]; 
+//		}
+//
+//		predict_two_para(block_image, block_resi, para, mode);
+//		//predict_two_para(Para2_image, resi, predicted, para, height, width);
+//		//predict_three_para(Para3_image, resi, predicted, para, height, width);
+//		//predict_four_para(Para4_image, resi, predicted, para, height, width);
+//	}
+//	//cout << "\t\t\t\t";
+//	//printf("%10d%10d%10d%10d%10d%10d%10d%10d%10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
+//	for(int i = 0; i < 2; ++i)
+//	{
+//		if (i == 0)
+//			cout << "2 predict param\t";
+//		else
+//			cout << "\t\t\t\t";
+//		for(int j = 0; j < 9; ++j)
+//			printf("%10.4f", para_9mode[i][j]); 
+//		printf("\n");
+//	}
+//	//printf("predict_2_parameter estimate and predict end\n");
+//	printf("\n");
+//
+//	//long long energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col);
+//	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab);
+//	//printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, energy_temp);
+//
+//	//int modeMinRes = 0;
+//	//int minRes = R[modeMinRes];
+//	//for (int i = 0; i < 11; ++i)
+//	//{
+//	//	if (R[i] < R[modeMinRes])
+//	//	{
+//	//		modeMinRes = i;
+//	//		minRes = R[i];
+//	//	}
+//	//}
+//	//printf("BLOCK [%4d][%4d] %d %d\n",i_row, i_col, minRes, modeMinRes);
+//	//cout << minRes << endl;
+//
+//	//count[modeMinRes] += 1;
+//	//estimate(block_image, para, i_row, i_col, modeMinRes);
+//	//predict_paraN1(block_image, resi, predicted, para, modeMinRes);
+//
+//	//printf("simple block (%d, %d) end \n", i_row, i_col);
+//
+//	for(int i = 0; i < 10; ++i)
+//	{
+//		free(para[i]);
+//		free(para_9mode[i]);
+//	}
+//	free(para);
+//	free(para_9mode);
+//	return energy_temp;
+//}
+//block predict_1_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256])
+//{
+//	double **para = NULL;
+//	para = (double **)calloc(10,sizeof(double *));
+//	for(int i = 0; i < 10; i++)
+//	{
+//		para[i] = (double *)calloc(1,sizeof(double));
+//	}
+//	double **para_9mode = NULL;
+//	para_9mode = (double **)calloc(10,sizeof(double *));
+//	for(int i = 0; i < 10; i++)
+//	{
+//		para_9mode[i] = (double *)calloc(10,sizeof(double));
+//	}
+//
+//	int R[9];
+//	for (int mode = 0; mode < 9; ++mode)
+//		R[mode] = 0;
+//
+//	for(int r = 0; r < BLOCKHEIGHT + 6; r++)    
+//	{
+//		for(int c = 0; c < BLOCKWIDTH + 6; c++)
+//		{
+//			if(r > BLOCKHEIGHT + 2  || (r > 2 && c > BLOCKWIDTH + 2))// 考虑模式3、7,将图像块的右边两列和下边两行的值赋值成128
+//				block_image[r][c] = 128;
+//		}
+//	}
+//
+//	//printf("predict_1_parameter start estimate\n");
+//	for(int mode = 0; mode < 8; ++mode)
+//	{
+//		estimate_one_para(block_image, para, mode);
+//		//printf("mode %d finally para result is\n", mode);
+//		for(int i = 0; i < 1; ++i)
+//		{
+//			for(int j = 0; j < 1; ++j)
+//				para_9mode[i][mode] = para[i][j];  
+//		}
+//		predict_one_para(block_image, block_resi, para, mode);
+//		//predict_two_para(Para2_image, resi, predicted, para, height, width);
+//		//predict_three_para(Para3_image, resi, predicted, para, height, width);
+//		//predict_four_para(Para4_image, resi, predicted, para, height, width);
+//	}
+//	//printf("%-10d%-10d%-10d%-10d%-10d%-10d%-10d%-10d%-10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
+//	for(int i = 0; i < 1; ++i)
+//	{
+//		if (i == 0)
+//			cout << "1 predict param\t";
+//		else
+//			cout << "\t\t\t\t";
+//		for(int j = 0; j < 9; ++j)
+//			//printf("%f\t\t", para_9mode[i][j]);
+//			printf("%10.4f", para_9mode[i][j]);
+//		printf("\n");
+//	}
+//	//printf("predict_1_parameter estimate and predict end\n");
+//	printf("\n");
+//
+//	//long long energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col);
+//	block energy_temp = CalcBestResi(block_image, block_resi, block_pre, i_row, i_col, blocktab);
+//	//printf("Accumulated energe [%4d][%4d]  %I64d\n", i_row, i_col, energy_temp);
+//
+//	//int modeMinRes = 0;
+//	//int minRes = R[modeMinRes];
+//	//for (int i = 0; i < 11; ++i)
+//	//{
+//	//	if (R[i] < R[modeMinRes])
+//	//	{
+//	//		modeMinRes = i;
+//	//		minRes = R[i];
+//	//	}
+//	//}
+//	//printf("BLOCK [%4d][%4d] %d %d\n",i_row, i_col, minRes, modeMinRes);
+//	//cout << minRes << endl;
+//
+//	//count[modeMinRes] += 1;
+//	//estimate(block_image, para, i_row, i_col, modeMinRes);
+//	//predict_paraN1(block_image, resi, predicted, para, modeMinRes);
+//
+//	//printf("simple block (%d, %d) end \n", i_row, i_col);
+//
+//	for(int i = 0; i < 10; ++i)
+//	{
+//		free(para[i]);
+//		free(para_9mode[i]);
+//	}
+//	free(para);
+//	free(para_9mode);
+//	return energy_temp;
+//}
 // 对各个图像块按12种预测模式进行预测，选出最好的一种得到残差,返回全图的残差能量
-long long predict(short **image_construct, short **resi, short **predicted, int height, int width)
+long long predict(short **image_construct, short **resi, short **predicted, int height, int width, short **direction_block)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	short block_resi[4][4] = {0};          	   //每一个小块的残差值
@@ -1107,6 +1113,7 @@ long long predict(short **image_construct, short **resi, short **predicted, int 
 	short min_resi[4][4] = {0};					//残差能量最小时对应的残差块数据
 	short min_pre[4][4] = {0};					//残差能量最小时对应的块预测数据
 	int  modeMinRes = 0;                        //最优预测对应的模式
+	short direction_mode = 0;   //楔形滤波器得到的方向
 
 	short resi_temp[4][4] = {0};                 //块残差数据
 	short smallimage[256][256][10][10] = {0};
@@ -1180,6 +1187,10 @@ long long predict(short **image_construct, short **resi, short **predicted, int 
 			//energy_2_parameter = predict_2_parameter(Para2_image, block_resi, block_pre, i_row, i_col);
 			//energy_3_parameter = predict_3_parameter(Para3_image, block_resi, block_pre, i_row, i_col);
 			//energy_4_parameter = predict_4_parameter(Para4_image, block_resi, block_pre, i_row, i_col);
+			//parameter4 = predict_4_parameter(Para4_image, block_resi, block_pre, i_row, i_col, blocktab);
+			direction_mode = direction_block[i_row][i_col];
+			parameter4 = predict_4_parameter(Para4_image, block_resi, block_pre, i_row, i_col, blocktab, direction_mode);
+			/********************************************************************************
 			cout << "\t\t\t\t";
 			printf("%10d%10d%10d%10d%10d%10d%10d%10d%10d\n", 0, 1, 2, 3, 4, 5, 6, 7, 8);
 			parameter1 = predict_1_parameter(Para1_image, block_resi, block_pre, i_row, i_col, blocktab);
@@ -1273,27 +1284,42 @@ long long predict(short **image_construct, short **resi, short **predicted, int 
 				modeMinRes = parameter4.modeMinRes;
 				para_label = 3;
 			}
-			
+			****************************************************************************************/
 			/**************统计不同参数个数下，各模式为最优预测的图像块数******************/
-			//count_para_mode[0][parameter4.modeMinRes] += 1;
-			//cout << "[i_row][i_col]" << i_row << " " << i_col << endl;
-			//cout << "min_energy = " << parameter4.min_energy << " " << "modeMinRes = " << parameter4.modeMinRes <<endl;
-			//resi_energy += parameter4.min_energy; 
-			
+			count_para_mode[0][parameter4.modeMinRes] += 1;
+			cout << "[i_row][i_col]" << i_row << " " << i_col << endl;
+			cout << "min_energy = " << parameter4.min_energy << " " << "modeMinRes = " << parameter4.modeMinRes <<endl;
+			resi_energy += parameter4.min_energy; 
+			/*************将每个块的最优预测模式方向写到文件中***********************************/
+			FILE *fout_mode = fopen("optimal_direction_mode.txt", "a+");
+			assert(fout_mode);
+			if(fout_mode != NULL){
+				if((i_col + 1) % COLS == 0)
+					fprintf(fout_mode, "\n");
+				else
+					fprintf(fout_mode, "%4d", parameter4.modeMinRes);
+			}	
+			fclose(fout_mode);
+			/******************************************************************************/
+			FILE *fout = fopen("block_resi4.txt", "a+");
+			assert(fout);
+			if(fout != NULL)
+				fprintf(fout, "%4d\t %4d\n", parameter4.min_energy, parameter4.modeMinRes);
+			fclose(fout);
 			/************每个图像块将不同参数个数下预测的结果进行比较取最优***********
-			**************统计不同参数个数下，各模式为最优预测的图像块数******************/
+			**************统计不同参数个数下，各模式为最优预测的图像块数****
 			count_para_mode[para_label][modeMinRes] += 1;
 			para_num[para_label] += 1;
 			cout << "[i_row][i_col]" << i_row << " " << i_col << endl;
 			cout << "min_energy = " << min_energy << "; " << "para num = "<< para_label + 1 <<" ;"<< "modeMinRes = " << modeMinRes  <<endl;
 			resi_energy += min_energy;
-
+			
 			FILE *fout = fopen("block_resi.txt", "a+");
 			assert(fout);
 			if(fout != NULL)
-				fprintf(fout, "%4d\t %4d\t %4d\n", min_energy, para_label + 1, modeMinRes);
+				fprintf(fout, "%4d\t (%d,%d)\n", min_energy, para_label + 1, modeMinRes);
 			fclose(fout);
-
+			**************/
 
 			//计算对每一种预测模式的预测残差，并比较残差能量，将能量最低的预测模式下的残差保留,返回值为残差能量
 			//long long energy_temp = CalcBestResi(block_resi, block_pre, i_row, i_col);

@@ -25,12 +25,12 @@ short block_pre5[4][4] = {0};				 //每一个小块的预测值
 short block_pre6[4][4] = {0};				 //每一个小块的预测值
 short block_pre7[4][4] = {0};				 //每一个小块的预测值
 short block_pre8[4][4] = {0};				 //每一个小块的预测值
-int count_para_mode[4][9] = {0};
+int count_para_mode[4][10] = {0};
 int count[9] = {0};
 int  para_num[4] = {0};											//标记不同参数个数下预测最优的图像块数
 
 
-struct block blocktab[256][256];
+struct block blocktab[128][128];
 
 //short dc_left_image[256][256][8][8];    // 全局块
 //short dc_top_image[256][256][8][8];
@@ -305,13 +305,33 @@ int main(int argc, char *argv[])
 	}
 	fclose(fout);
 
+	// 读入图像块方向信息文件
+	short** direction_block = NULL;
+	direction_block = (short **)calloc(ROWS, sizeof(short *));
+	for(int i = 0; i < ROWS; i++)
+		direction_block[i] = (short *)calloc(COLS,sizeof(short));
+	if((filein = fopen("direction.txt","r")) == NULL)
+	{
+		printf("the file can not open\n");
+		exit(0);
+	}
+	for(int i_row = 0; i_row < ROWS; ++i_row){
+		for(int i_col = 0; i_col < COLS; ++i_col){
+			fscanf(filein, "%d", &direction_block[i_row][i_col]);
+		}
+	}
 	
-	LS_resi_energy = predict(imgLSConstructed, LS_resi, preLS, height, width);
+	fclose(filein);
+	filein = NULL;
+	printf("打开图像块方向信息文件成功\n");
+
+	//LS_resi_energy = predict(imgLSConstructed, LS_resi, preLS, height, width);
+	LS_resi_energy = predict(imgLSConstructed, LS_resi, preLS, height, width, direction_block);
 	cout << "Total energy: " << LS_resi_energy << endl;
 
 	int blocknum = 0;  //总块数为65536
 	/************每个图像块将不同参数个数下预测的结果进行比较取最优***********
-	**************统计各参数个数下，各模式为最优预测的图像块数******************/
+	**************统计各参数个数下，各模式为最优预测的图像块数******************
 	for(int i = 0; i < 4; ++i)
 	{
 		cout << "para_num: " << i + 1 << endl;
@@ -328,12 +348,12 @@ int main(int argc, char *argv[])
 	{
 		cout << "para_num " << i + 1 << ": "<< para_num[i] << "\t";
 	}
-	/*******************************************************************/
+	*******************************************************************/
 
-	/**************单独统计每种参数个数下，各模式为最优预测的总图像块数******
+	/**************单独统计每种参数个数下，各模式为最优预测的总图像块数******/
 	for(int i = 0; i < 1; ++i)
 	{
-		for(int j = 0; j < 9; ++j)
+		for(int j = 0; j < 10; ++j)
 		{
 			cout << "count_para_mode: " << j << " " << count_para_mode[0][j] << endl;
 			blocknum += count_para_mode[0][j];
@@ -341,7 +361,7 @@ int main(int argc, char *argv[])
 		cout << " " << endl;
 	}
 	cout << "blocknum: " << blocknum << endl;
-	********************************************************************/
+	/********************************************************************/
 
 	printf("预测结束\n");
 
@@ -368,16 +388,16 @@ int main(int argc, char *argv[])
 		printf("oppenning error fileout\n");
 		exit(0);
 	}
-	fwrite(imgLSConstructed, sizeof(short), 1030 * 1030, fileout);
+	fwrite(imgLSConstructed, sizeof(short), (height + 6) * (width + 6), fileout);
 	fclose(fileout);
 
 	//// 转换成8bit
-	unsigned char **pRes = new unsigned char*[1030];
-	for (int i = 0; i < 1030; ++i)
-		pRes[i] = new unsigned char[1030];
+	unsigned char **pRes = new unsigned char*[height + 6];
+	for (int i = 0; i < height + 6; ++i)
+		pRes[i] = new unsigned char[width + 6];
 
-	for (int r = 0; r < 1030; ++r)
-		for (int c = 0; c < 1030; ++c)
+	for (int r = 0; r < height + 6; ++r)
+		for (int c = 0; c < width + 6; ++c)
 			pRes[r][c] = static_cast<unsigned char>(imgLSConstructed[r][c]);
 	fileout = fopen("img264Constructed_8bit.raw", "wb");
 	if (fileout == NULL)
@@ -385,10 +405,10 @@ int main(int argc, char *argv[])
 		printf("openning error fileout\n");
 		exit(0);
 	}
-	for (int r = 3; r < 1027; ++r)
-		fwrite(pRes[r] + 3, sizeof(unsigned char), 1024, fileout);
+	for (int r = 3; r < height + 3; ++r)
+		fwrite(pRes[r] + 3, sizeof(unsigned char), width, fileout);
 	fclose(fileout);
-	for (int i = 0; i < 1030; ++i)
+	for (int i = 0; i < height + 6; ++i)
 		delete [] pRes[i];
 	delete [] pRes;
 	pRes = NULL;
