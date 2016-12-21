@@ -30,7 +30,7 @@ int count[9] = {0};
 int  para_num[4] = {0};											//标记不同参数个数下预测最优的图像块数
 
 
-struct block blocktab[128][128];
+struct block blocktab[ROWS][COLS];
 
 //short dc_left_image[256][256][8][8];    // 全局块
 //short dc_top_image[256][256][8][8];
@@ -306,11 +306,11 @@ int main(int argc, char *argv[])
 	fclose(fout);
 
 	// 读入图像块方向信息文件
-	short** direction_block = NULL;
-	direction_block = (short **)calloc(ROWS, sizeof(short *));
+	int** direction_block = NULL;
+	direction_block = (int **)calloc(ROWS, sizeof(int *));
 	for(int i = 0; i < ROWS; i++)
-		direction_block[i] = (short *)calloc(COLS,sizeof(short));
-	if((filein = fopen("direction.txt","r")) == NULL)
+		direction_block[i] = (int *)calloc(COLS,sizeof(int));
+	if((filein = fopen("direction_lena_L_16_2.8.txt","r")) == NULL)
 	{
 		printf("the file can not open\n");
 		exit(0);

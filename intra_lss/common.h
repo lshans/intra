@@ -18,6 +18,6 @@ struct block{
 	short     min_resi[4][4];
 	short     min_pre[4][4];
 };
-extern struct block blocktab[256][256];
+extern struct block blocktab[ROWS][COLS];
 
 #endif

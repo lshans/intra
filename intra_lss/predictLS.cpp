@@ -217,7 +217,7 @@ long long CalcBestResi(short block_image[8][8], int16_t block_resi[4][4], int16_
 	}
 	return minRes;
 }
-struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, int i_col, block blocktab[][256], short mode_block)
+struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], int16_t block_pre[4][4], int i_row, int i_col, block blocktab[][COLS], int mode_block)
 {
 	int R[9];
 	for (int i = 0; i < 9; ++i)
@@ -315,7 +315,7 @@ struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], i
 	//count[modeMinRes] += 1;
 
 	/***将最优模式设置成楔形滤波器得到的块方向***/
-	//modeMinRes = mode_block;
+	modeMinRes = mode_block;
 	/***************************************/
 
 	switch (modeMinRes)
@@ -423,15 +423,18 @@ struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], i
 	default:
 		break;
 	}
+	int minRes_final = 0;
 	for (int i = 0; i < BLOCKHEIGHT; ++i)
 	{
 		for (int j = 0; j < BLOCKWIDTH; ++j)
 		{
 			blocktab[i_row][i_col].min_pre[i][j] = block_pre[i][j];				
 			blocktab[i_row][i_col].min_resi[i][j] = block_image[i + 3][j + 3] - block_pre[i][j];//预测残差
+			minRes_final += (blocktab[i_row][i_col].min_resi[i][j] * blocktab[i_row][i_col].min_resi[i][j]);
 		}
 	}
-	 blocktab[i_row][i_col].min_energy = minRes;
+
+	 blocktab[i_row][i_col].min_energy = minRes_final;
 	 blocktab[i_row][i_col].modeMinRes = modeMinRes;
 	 return blocktab[i_row][i_col];
 }
@@ -725,7 +728,7 @@ struct block CalcBestResi(short block_image[10][10], int16_t block_resi[4][4], i
 // 	free(para);
 // 	return energy_temp;
 // }
-block predict_4_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][256], int mode_block)
+block predict_4_parameter(short block_image[10][10], short block_resi[4][4], short block_pre[4][4], int i_row, int i_col, block blocktab[][COLS], int mode_block)
 {
 	double **para = NULL;
 	para = (double **)calloc(10,sizeof(double *));
@@ -753,7 +756,7 @@ block predict_4_parameter(short block_image[10][10], short block_resi[4][4], sho
 	}
 
 	//printf("predict_4_parameter start estimate\n");
-	for(int mode = 0; mode < 10; ++mode)
+	for(int mode = 1; mode < 9; ++mode)
 	{
 		estimate_four_para(block_image, para, mode);
 		//printf("mode %d finally para result is\n", mode);
@@ -1090,7 +1093,7 @@ block predict_4_parameter(short block_image[10][10], short block_resi[4][4], sho
 //	return energy_temp;
 //}
 // 对各个图像块按12种预测模式进行预测，选出最好的一种得到残差,返回全图的残差能量
-long long predict(short **image_construct, short **resi, short **predicted, int height, int width, short **direction_block)
+long long predict(short **image_construct, short **resi, short **predicted, int height, int width, int **direction_block)
 {
 	// 图像残差块、变换量化后的图像块、的内存空间分配
 	short block_resi[4][4] = {0};          	   //每一个小块的残差值
@@ -1113,7 +1116,7 @@ long long predict(short **image_construct, short **resi, short **predicted, int 
 	short min_resi[4][4] = {0};					//残差能量最小时对应的残差块数据
 	short min_pre[4][4] = {0};					//残差能量最小时对应的块预测数据
 	int  modeMinRes = 0;                        //最优预测对应的模式
-	short direction_mode = 0;   //楔形滤波器得到的方向
+	int direction_mode = 0;   //楔形滤波器得到的方向
 
 	short resi_temp[4][4] = {0};                 //块残差数据
 	short smallimage[256][256][10][10] = {0};
